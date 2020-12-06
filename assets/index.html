@@ -1,0 +1,23 @@
+<html>
+    <head>
+        <title>PYTHONFACE</title>
+        <link rel="stylesheet" href="/style/pf.css">
+    </head>
+    <body>
+        <div id="main" class="pf-interactor">
+            <div class="pf-outer-pane">
+                <div class="pf-pane"></div>
+            </div>
+            <div class="pf-input-box">
+                <div class="pf-input"></div>
+            </div>
+        </div>
+
+        <script type="module">
+            import { Repl } from "/scripts/repl.js";
+            let repl = new Repl(document.getElementById("main"));
+            repl.connect();
+            repl.editor.focus();
+        </script>
+    </body>
+</html>

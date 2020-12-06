@@ -1,0 +1,102 @@
+
+body {
+    margin: auto;
+    font-family: monospace;
+}
+
+.pf-interactor {
+    width: 800px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    margin: auto;
+}
+
+.pf-outer-pane {
+    flex-grow: 1;
+    padding: 5px;
+    border-bottom: 3px solid #999;
+    overflow: scroll;
+
+    /* This keeps it scrolled to the bottom. */
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+
+.pf-input-box {
+    padding: 5px;
+    padding-bottom: 15px;
+}
+
+.pf-line {
+    display: flex;
+    flex-direction: row;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+
+.pf-gutter {
+    min-height: 1em;
+}
+
+
+.pf-line.pf-t-echo .ace_content {
+    background: #f8f8f8;
+}
+
+.pf-line.pf-t-echo {
+    background: #f8f8f8;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+
+.pf-gutter.pf-t-echo {
+    /* background: white; */
+    width: 20px;
+    border-right: 5px solid transparent;
+    margin-right: 10px;
+}
+
+
+.pf-gutter.pf-t-expression {
+    /* background: #dcdcdc; */
+    border-right: 5px solid #88f;
+    width: 20px;
+    margin-right: 10px;
+}
+
+
+.pf-gutter.pf-t-exception {
+    /* background: #dcdcdc; */
+    border-right: 5px solid red;
+    width: 20px;
+    margin-right: 10px;
+}
+
+
+.pf-gutter.pf-t-print {
+    border-right: 5px solid transparent;
+    width: 20px;
+    margin-right: 10px;
+    min-height: 0;
+}
+
+
+.pf-line.pf-t-print {
+    margin: 0px;
+    padding: 0px;
+}
+
+.pf-print-sequence {
+    display: flex;
+    flex-direction: row;
+    place-items: center;
+}
+
+.pf-print-sequence > * {
+    padding-left: 5px;
+    padding-right: 5px;
+}
