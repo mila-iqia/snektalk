@@ -4,6 +4,29 @@ import ace from "/scripts/ace/ace.js"
 ace.config.set("basePath", "/scripts/ace/")
 
 
+function activateScripts(node) {
+    if (node.tagName === 'SCRIPT') {
+        node.parentNode.replaceChild(reScript(node), node);
+    }
+    else {
+        for (let child of node.childNodes) {
+            activateScripts(child);
+        }
+    }
+    return node;
+}
+
+
+function reScript(node){
+    let script  = document.createElement("script");
+    script.text = node.innerHTML;
+    for (let attr of node.attributes) {
+        script.setAttribute(attr.name, attr.value);
+    }
+    return script;
+}
+
+
 export class Repl {
 
     constructor(target) {
@@ -20,7 +43,11 @@ export class Repl {
     $globalClickEvent(evt) {
         let target = evt.target;
         while (target) {
-            if (target.onclick !== null) {
+            if (target.onclick !== null
+                || target.onmousedown !== null
+                || target.ondblclick !== null
+                || target.tagName === "A") {
+                // Stop if non-default behavior or link
                 break;
             }
             else if (evt.metaKey && target.getAttribute("pinnable") !== null) {
@@ -216,6 +243,7 @@ export class Repl {
     reify(html) {
         let rval = document.createElement("div");
         rval.innerHTML = html;
+        activateScripts(rval);
         return rval;
     }
 

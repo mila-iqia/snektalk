@@ -87,5 +87,8 @@ def inject():
     hrepr.configure(
         mixins=Goodies,
         postprocess=wrap_onclick,
-        backend=standard_html.copy(initial_state={"hjson": pf_hjson}),
+        backend=standard_html.copy(initial_state={
+            "hjson": pf_hjson,
+            "requirejs_resources": [],
+        }),
     )
