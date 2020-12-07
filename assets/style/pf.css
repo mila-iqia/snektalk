@@ -24,6 +24,26 @@ body {
 }
 
 
+.pf-pin-pane {
+    display: flex;
+    flex-direction: row;
+    padding: 5px;
+    border-bottom: 3px solid #999;
+    min-height: 50px;
+    max-height: 50%;
+    overflow: scroll;
+    place-items: center;
+}
+
+.pf-pin-pane > div {
+    padding: 5px;
+}
+
+.pf-pin-pane:empty {
+    display: none;
+}
+
+
 .pf-input-box {
     padding: 5px;
     padding-bottom: 15px;

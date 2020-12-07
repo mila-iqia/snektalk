@@ -67,8 +67,8 @@ def _default_click(obj, evt):
 
 def wrap_onclick(elem, obj, hrepr):
     if obj is not None:
-        onclick = elem.get_attribute("onclick", MethodType(_default_click, obj))
-        return elem(onclick=onclick)
+        method_id = callback_registry.register(MethodType(_default_click, obj))
+        return elem(objid=method_id, pinnable=True)
     else:
         return elem
 
