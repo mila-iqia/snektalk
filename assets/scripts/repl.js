@@ -176,6 +176,7 @@ export class Repl {
                     editor.session.insert(editor.getCursorPosition(), "\n ");
                     editor.selection.selectLine();
                     editor.autoIndent();
+                    editor.renderer.scrollCursorIntoView();
                 }
             }
         });
@@ -205,6 +206,7 @@ export class Repl {
                 }
                 else {
                     editor.navigateUp(1);
+                    editor.renderer.scrollCursorIntoView();
                 }
             }
         });
@@ -219,6 +221,7 @@ export class Repl {
                 }
                 else {
                     editor.navigateDown(1);
+                    editor.renderer.scrollCursorIntoView();
                 }
             }
         });
@@ -239,6 +242,7 @@ export class Repl {
             this.editor.setValue(this.history[this.historyCurrent], -delta);
             // We still want to be at the end of the line, though:
             this.editor.navigateLineEnd();
+            this.editor.renderer.scrollCursorIntoView();
         }
     }
 
