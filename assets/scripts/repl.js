@@ -52,9 +52,11 @@ export class Repl {
             }
             else if (evt.metaKey && target.getAttribute("pinnable") !== null) {
                 this.pin(target);
+                break;
             }
             else if (!evt.metaKey && target.getAttribute("objid") !== null) {
                 this.pfcb(parseInt(target.getAttribute("objid")));
+                break;
             }
             target = target.parentElement;
         }

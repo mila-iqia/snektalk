@@ -101,7 +101,7 @@ class Session:
             result = ev.eval(expr)
             typ = "statement" if result is None else "expression"
         except Exception as e:
-            result = str(e)
+            result = e
             typ = "exception"
 
         self.glb["_"] = result

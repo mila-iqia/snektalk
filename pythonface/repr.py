@@ -11,7 +11,7 @@ from .session import session
 ##########################
 
 
-@hjson._dump.variant
+@hjson.dump.variant
 def _pf_hjson(self, fn: (MethodType, FunctionType)):
     method_id = callback_registry.register(fn)
     return f"$$PFCB({method_id},this,event)"

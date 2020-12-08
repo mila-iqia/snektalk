@@ -120,3 +120,8 @@ body {
     padding-left: 5px;
     padding-right: 5px;
 }
+
+
+.pf-pinbutton:hover {
+    cursor: pointer;
+}
