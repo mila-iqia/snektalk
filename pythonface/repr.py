@@ -1,5 +1,5 @@
 import builtins
-from types import FunctionType, MethodType
+from types import FunctionType, MethodType, ModuleType
 
 from hrepr import Hrepr, Tag, hjson, hrepr, standard_html
 
@@ -99,6 +99,14 @@ def _default_click(obj, evt):
         )
 
 
+def join(elems, sep):
+    rval = [elems[0]]
+    for elem in elems[1:]:
+        rval.append(sep)
+        rval.append(elem)
+    return rval
+
+
 def represents(obj, elem, pinnable=False):
     if obj is None:
         return elem
@@ -114,8 +122,98 @@ def wrap_onclick(elem, obj, hrepr):
         return elem
 
 
-class Goodies(Hrepr):
-    pass
+class PFHrepr(Hrepr):
+    def hrepr(self, mod: ModuleType):
+        exclusions = {
+            "__builtins__",
+            "__name__",
+            "__doc__",
+            "__path__",
+            "__file__",
+            "__cached__",
+            "__package__",
+            "__loader__",
+            "__spec__",
+            "__all__",
+            "__author__",
+        }
+        if self.state.depth == 0:
+            return self.H.instance(
+                self.H.pre(mod.__doc__.strip()) if mod.__doc__ else "",
+                *[
+                    self.H.pair(
+                        represents(value, self.H.span(name)),
+                        self(value, max_depth=2),
+                        delimiter="=",
+                    )
+                    for name, value in sorted(vars(mod).items())
+                    if name not in exclusions
+                ],
+                type=self.H.span(
+                    self.H.span["pf-block-type"]("module "), mod.__name__
+                ),
+                vertical=True,
+            )
+        else:
+            return NotImplemented
+
+    def hrepr(self, cls: type):
+        if self.state.depth > 0:
+            return NotImplemented
+
+        exclusions = {"__dict__", "__module__", "__weakref__", "__doc__"}
+
+        # Exclude the object type to reduce noise
+        mro = list(type.mro(cls))[:-1]
+
+        rows = {}
+        clselems = []
+        for cls2 in mro:
+            clsname = cls2.__qualname__
+            clselem = represents(cls2, self.H.span(clsname))
+            clselems.append(clselem)
+            for name, value in vars(cls2).items():
+                if name not in rows and name not in exclusions:
+                    rows[name] = (
+                        name,
+                        clsname,
+                        clselem,
+                        represents(value, self.H.span(name)),
+                        value,
+                    )
+
+        rows = list(rows.values())
+        rows.sort(key=lambda row: row[0])
+
+        tbl = self.H.table["hrepr-body"]()
+
+        doc = getattr(cls, "__doc__", None)
+        if doc:
+            tbl = tbl(self.H.tr(self.H.td(self.H.pre(doc), colspan=3)))
+
+        for _, clsname, clselem, nameelem, value in rows:
+            css_class = (
+                "pf-clsname-principal"
+                if clsname == cls.__name__
+                else "pf-clsname"
+            )
+            tbl = tbl(
+                self.H.tr(
+                    self.H.td[css_class](clselem, "."),
+                    self.H.td(nameelem),
+                    self.H.td("= ", self(value)),
+                )
+            )
+
+        title = self.H.span(
+            self.H.span["pf-block-type"]("class "), *join(clselems, " > ")
+        )
+
+        return self.H.instance(
+            tbl,
+            type=title,
+            vertical=True,
+        )
 
 
 #####################################
@@ -127,10 +225,12 @@ def inject():
     builtins.print = pfprint
     builtins.hdir = hdir
     hrepr.configure(
-        mixins=Goodies,
+        mixins=PFHrepr,
         postprocess=wrap_onclick,
-        backend=standard_html.copy(initial_state={
-            "hjson": pf_hjson,
-            "requirejs_resources": [],
-        }),
+        backend=standard_html.copy(
+            initial_state={
+                "hjson": pf_hjson,
+                "requirejs_resources": [],
+            }
+        ),
     )

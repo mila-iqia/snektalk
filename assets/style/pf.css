@@ -78,14 +78,12 @@ body {
     padding-bottom: 5px;
 }
 
-
 .pf-gutter.pf-t-echo {
     /* background: white; */
     width: 20px;
     border-right: 5px solid transparent;
     margin-right: 10px;
 }
-
 
 .pf-gutter.pf-t-expression {
     /* background: #dcdcdc; */
@@ -94,7 +92,6 @@ body {
     margin-right: 10px;
 }
 
-
 .pf-gutter.pf-t-exception {
     /* background: #dcdcdc; */
     border-right: 5px solid red;
@@ -102,14 +99,12 @@ body {
     margin-right: 10px;
 }
 
-
 .pf-gutter.pf-t-print {
     border-right: 5px solid transparent;
     width: 20px;
     margin-right: 10px;
     min-height: 0;
 }
-
 
 .pf-line.pf-t-print {
     margin: 0px;
@@ -127,7 +122,21 @@ body {
     padding-right: 5px;
 }
 
-
 .pf-pinbutton:hover {
     cursor: pointer;
+}
+
+.pf-block-type {
+    margin-left: 5px;
+    color: #fa0;
+}
+
+.pf-clsname {
+    color: #aaa;
+    text-align: right;
+}
+
+.pf-clsname-principal {
+    color: #777;
+    text-align: right;
 }
