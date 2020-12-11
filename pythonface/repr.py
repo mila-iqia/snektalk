@@ -1,7 +1,7 @@
 import builtins
 from types import FunctionType, MethodType
 
-from hrepr import Hrepr, hjson, hrepr, standard_html
+from hrepr import Hrepr, Tag, hjson, hrepr, standard_html
 
 from .registry import callback_registry
 from .session import session
@@ -86,15 +86,26 @@ def hdir(obj):
 
 def _default_click(obj, evt):
     ctx = session.get()
-    varname = ctx.session.getvar(obj)
-    ctx.queue(
-        command="pastevar",
-        value=varname,
-    )
+    if evt.get("shiftKey", False):
+        ctx.queue(
+            command="result",
+            value=hrepr(obj),
+            type="print",
+        )
+    else:
+        varname = ctx.session.getvar(obj)
+        ctx.queue(
+            command="pastevar",
+            value=varname,
+        )
 
 
 def wrap_onclick(elem, obj, hrepr):
-    if obj is not None:
+    if (
+        obj is not None
+        and not isinstance(obj, Tag)
+        and hrepr.config.interactive is not False
+    ):
         method_id = callback_registry.register(MethodType(_default_click, obj))
         return elem(objid=method_id, pinnable=True)
     else:
