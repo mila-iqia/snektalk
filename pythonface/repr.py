@@ -99,14 +99,17 @@ def _default_click(obj, evt):
         )
 
 
-def wrap_onclick(elem, obj, hrepr):
-    if (
-        obj is not None
-        and not isinstance(obj, Tag)
-        and hrepr.config.interactive is not False
-    ):
+def represents(obj, elem, pinnable=False):
+    if obj is None:
+        return elem
+    else:
         method_id = callback_registry.register(MethodType(_default_click, obj))
-        return elem(objid=method_id, pinnable=True)
+        return elem(objid=method_id, pinnable=pinnable)
+
+
+def wrap_onclick(elem, obj, hrepr):
+    if not isinstance(obj, Tag) and hrepr.config.interactive is not False:
+        return represents(obj, elem, pinnable=True)
     else:
         return elem
 
