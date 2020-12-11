@@ -69,10 +69,9 @@ class HDir:
 
     def __hrepr__(self, H, hrepr):
         exclusions = {"__doc__", "__dict__"}
-        return H.table["hrepr-body"](*[
-            H.tr(H.td(k), H.td(" = ", hrepr(v)))
-            for k, v in self.items()
-        ])
+        return H.table["hrepr-body"](
+            *[H.tr(H.td(k), H.td(" = ", hrepr(v))) for k, v in self.items()]
+        )
 
 
 def hdir(obj):
