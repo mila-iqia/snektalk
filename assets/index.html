@@ -3,18 +3,21 @@
         <title>PYTHONFACE</title>
         <link rel="stylesheet" href="/style/pf.css">
         <script type="text/javascript" src="/scripts/require.min.js"></script>
+        <script type="text/javascript" src="/scripts/ace/ace.js"></script>
+        <script>define("ace", [], ace);</script>
     </head>
     <body>
-        <div id="main" class="pf-interactor">
+        <div id="main">
             <div class="pf-pin-pane"></div>
-            <div class="pf-outer-pane">
-                <div class="pf-pane"></div>
-            </div>
-            <div class="pf-input-box">
-                <div class="pf-input"></div>
+            <div class="pf-interactor">
+                <div class="pf-outer-pane">
+                    <div class="pf-pane"></div>
+                </div>
+                <div class="pf-input-box">
+                    <div class="pf-input"></div>
+                </div>
             </div>
         </div>
-
         <script type="module">
             import { Repl } from "/scripts/repl.js";
             let repl = new Repl(document.getElementById("main"));

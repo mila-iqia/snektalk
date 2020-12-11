@@ -1,9 +1,4 @@
 
-import ace from "/scripts/ace/ace.js"
-
-ace.config.set("basePath", "/scripts/ace/")
-
-
 function activateScripts(node) {
     if (node.tagName === 'SCRIPT') {
         node.parentNode.replaceChild(reScript(node), node);
@@ -27,6 +22,26 @@ function reScript(node){
 }
 
 
+// Adapted from: https://stackoverflow.com/questions/123999/how-can-i-tell-if-a-dom-element-is-visible-in-the-current-viewport/7557433#7557433
+function isElementInViewport(el) {
+    var rect = el.getBoundingClientRect();
+    return (
+        el.offsetWidth > 0
+        && el.offsetHeight > 0
+        && rect.top >= 0
+        && rect.left >= 0
+        && rect.bottom <= (window.innerHeight
+                          || document.documentElement.clientHeight)
+        && rect.right <= (window.innerWidth
+                          || document.documentElement.clientWidth)
+    );
+}
+
+
+let allEditors = [];
+let mainRepl = null;
+
+
 export class Repl {
 
     constructor(target) {
@@ -37,10 +52,65 @@ export class Repl {
         this.historyCurrent = 0;
         this.history = [""];
         target.onclick = this.$globalClickEvent.bind(this);
-        document.$$PFCB = this.pfcb.bind(this);
+        window.onkeydown = this.$globalKDEvent.bind(this);
+        window.$$PFCB = this.pfcb.bind(this);
+        this.$currid = 0;
+        this.$responseMap = {};
+        exports.mainRepl = this;
+    }
+
+    $globalKDEvent(evt) {
+        // Cmd+B => navigate to next visible editor
+        if (evt.metaKey && !evt.altKey && !evt.ctrlKey
+            && evt.key === "b") {
+
+            evt.preventDefault();
+            evt.stopPropagation();
+    
+            // Find alive and visible editors
+            let editors = [];
+            let wkeditors = [];
+
+            for (let wkeditor of allEditors) {
+                let editor = wkeditor.deref();
+                if (editor) {
+                    // Alive
+                    wkeditors.push(wkeditor);
+                    // Visible
+                    if (isElementInViewport(editor.container)) {
+                        editors.push(editor);
+                    }
+                }
+            }
+            allEditors.splice(0, allEditors.length, ...wkeditors);
+
+            if (!evt.shiftKey) {
+                editors.reverse();
+                // REPL box should still be editor 0
+                editors.unshift(editors.pop());
+            }
+
+            let focused = null;
+            for (let editor of editors) {
+                if (focused) {
+                    editor.focus();
+                    return;
+                }
+                if (editor.isFocused()) {
+                    focused = editor;
+                }
+            }
+            if (editors) {
+                editors[0].focus();
+            }
+        }
     }
 
     $globalClickEvent(evt) {
+        if (evt.detail === 2) {
+            // Double-click
+            return;
+        }
         let target = evt.target;
         while (target) {
             if (target.onclick !== null
@@ -62,18 +132,26 @@ export class Repl {
         }
     }
 
-    pfcb(id) {
+    pfcb(id, ...args) {
         // Call a Python function by id
-        const exec = (...args) => {
+        const exec = async (...args) => {
+            let response_id = this.$currid++;
+            let response = new Promise(
+                (resolve, reject) => {
+                    this.$responseMap[response_id] = {resolve, reject};
+                }
+            );
             this.send({
                 command: "callback",
                 id: id,
+                response_id: response_id,
                 arguments: args
             });
+            return await response;
         }
         let evt = window.event;
 
-        if (evt === undefined) {
+        if (evt === undefined || evt.type === "load") {
             // If not in an event handler, we return the execution
             // function directly
             return exec;
@@ -137,6 +215,7 @@ export class Repl {
 
     _setupEditor(target) {
         let editor = ace.edit(target);
+        allEditors.push(new WeakRef(editor));
         editor.setOptions({
             showLineNumbers: false,
             showGutter: false,
@@ -286,6 +365,7 @@ export class Repl {
         gutter.className = "pf-gutter pf-t-" + type;
         wrapper.appendChild(gutter);
         wrapper.appendChild(elem);
+        elem.className = "pf-result pf-t-" + type;
         this.pane.appendChild(wrapper);
         return wrapper;
     }
@@ -320,6 +400,11 @@ export class Repl {
             elem.appendChild(ed);
             this.append(elem, "echo");
         }
+        else if (data.command == "response") {
+            // TODO: do something with reject
+            let {resolve, reject} = this.$responseMap[data.response_id];
+            resolve(data.value);
+        }
         else if (data.command == "pastevar") {
             let varname = data.value;
             this.editor.session.insert(this.editor.getCursorPosition(), varname);
@@ -346,3 +431,13 @@ export class Repl {
     }
 
 }
+
+
+let exports = {
+    allEditors,
+    mainRepl,
+    Repl,
+}
+
+
+define("repl", [], exports);

@@ -118,7 +118,7 @@ class Session:
             evalid=ev.evalid,
         )
 
-    async def command_callback(self, *, id, arguments):
+    async def command_callback(self, *, id, response_id, arguments):
         ev = Evaluator(self)
 
         try:
@@ -132,6 +132,12 @@ class Session:
 
         with ev.push_context():
             if inspect.isawaitable(cb):
-                await cb(*arguments)
+                result = await cb(*arguments)
             else:
-                cb(*arguments)
+                result = cb(*arguments)
+
+        await self.send(
+            command="response",
+            value=result,
+            response_id=response_id,
+        )

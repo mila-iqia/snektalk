@@ -4,6 +4,12 @@ body {
     font-family: monospace;
 }
 
+#main {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
+
 .pf-interactor {
     width: 800px;
     display: flex;
@@ -23,14 +29,11 @@ body {
     flex-direction: column-reverse;
 }
 
-
 .pf-pin-pane {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     padding: 5px;
-    border-bottom: 3px solid #999;
-    min-height: 50px;
-    max-height: 50%;
+    border-right: 3px solid #999;
     overflow: scroll;
     place-items: center;
 }
@@ -56,6 +59,9 @@ body {
     margin-bottom: 5px;
 }
 
+.pf-result {
+    flex-grow: 1;
+}
 
 .pf-gutter {
     min-height: 1em;
