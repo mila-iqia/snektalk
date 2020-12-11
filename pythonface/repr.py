@@ -51,6 +51,34 @@ def pfprint(*args, **kwargs):
     builtins.print = pfprint
 
 
+class HDir:
+    exclusions = {"__doc__", "__dict__"}
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def items(self):
+        for k in dir(self.obj):
+            if k in self.exclusions:
+                continue
+            try:
+                v = getattr(self.obj, k)
+            except Exception as e:
+                v = e
+            yield (k, v)
+
+    def __hrepr__(self, H, hrepr):
+        exclusions = {"__doc__", "__dict__"}
+        return H.table["hrepr-body"](*[
+            H.tr(H.td(k), H.td(" = ", hrepr(v)))
+            for k, v in self.items()
+        ])
+
+
+def hdir(obj):
+    return hrepr(HDir(obj), max_depth=2)
+
+
 ###############################
 # Add default onclick handler #
 ###############################
@@ -84,6 +112,7 @@ class Goodies(Hrepr):
 
 def inject():
     builtins.print = pfprint
+    builtins.hdir = hdir
     hrepr.configure(
         mixins=Goodies,
         postprocess=wrap_onclick,
