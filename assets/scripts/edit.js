@@ -73,9 +73,12 @@ define(["ace", "repl"], function(ace, repl) {
                 name: "save",
                 bindKey: "Cmd+S",
                 exec: async editor => {
-                    let success = await options.save(editor.getValue());
-                    if (success) {
+                    let response = await options.save(editor.getValue());
+                    if (response.success) {
                         editors.signal(this.funcId, editor.getValue(), "live");
+                    }
+                    else {
+                        this.setStatus("error", response.error);
                     }
                 }
             });
@@ -83,10 +86,13 @@ define(["ace", "repl"], function(ace, repl) {
                 name: "save-return",
                 bindKey: "Ctrl+Enter",
                 exec: async editor => {
-                    let success = await options.save(editor.getValue());
-                    if (success) {
+                    let response = await options.save(editor.getValue());
+                    if (response.success) {
                         editors.signal(this.funcId, editor.getValue(), "live");
                         repl.mainRepl.editor.focus();
+                    }
+                    else {
+                        this.setStatus("error", response.error);
                     }
                 }
             });
@@ -94,9 +100,12 @@ define(["ace", "repl"], function(ace, repl) {
                 name: "commit",
                 bindKey: "Cmd+Shift+S",
                 exec: async editor => {
-                    let success = await options.commit(editor.getValue());
-                    if (success) {
+                    let response = await options.commit(editor.getValue());
+                    if (response.success) {
                         editors.signal(this.funcId, editor.getValue(), "saved");
+                    }
+                    else {
+                        this.setStatus("error", response.error);
                     }
                 }
             });
@@ -105,6 +114,15 @@ define(["ace", "repl"], function(ace, repl) {
             if (options.highlight !== null && options.highlight !== undefined) {
                 let range = new Range(options.highlight, 0, options.highlight, 1);
                 this.mark = editor.session.addMarker(range, "pf-bedit-hl", "fullLine");
+            }
+
+            // TODO: Make the range read-only. This is a bit difficult to do
+            // with Ace in ways that can't be accidentally defeated. The best
+            // approach seems to be to replace insert/remove/etc. functions
+            // in editor.session.
+            if (options.protectedPrefix) {
+                let prot = new Range(0, 0, options.protectedPrefix - 1, 1);
+                editor.session.addMarker(prot, "pf-bedit-protected", "fullLine");
             }
 
             this.funcId = options.funcId;
@@ -138,22 +156,23 @@ define(["ace", "repl"], function(ace, repl) {
             }
         }
 
-        setStatus(status) {
+        setStatus(status, message) {
             if (this.status === status) {
                 return;
             }
+            this.status = status;
             this.element.className = "pf-bedit pf-bedit-" + status;
             if (status === "saved") {
-                this.status_state.innerText = "live, saved on disk";
+                this.status_state.innerText = message || "live, saved on disk";
             }
             else if (status === "live") {
-                this.status_state.innerText = "live, not saved";
+                this.status_state.innerText = message || "live, not saved";
             }
             else if (status === "dirty") {
-                this.status_state.innerText = "modified";
+                this.status_state.innerText = message || "modified";
             }
             else if (status === "error") {
-                this.status_state.innerText = "error";
+                this.status_state.innerText = message || "error";
             }
         }
 

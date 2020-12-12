@@ -21,6 +21,41 @@ def _map_filenames():
             filename_to_module[fname] = mod
 
 
+def _analyze_source(source):
+    # Compute indent
+    indent = _get_indent(source)
+
+    # Normalized source
+    norm_src = textwrap.dedent(source)
+
+    # Compute locked lines (decorator lines)
+    tree = ast.parse(norm_src, filename="<string>")
+    assert isinstance(tree, ast.Module)
+    assert len(tree.body) == 1
+    (fn,) = tree.body
+    assert isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef))
+    decos = fn.decorator_list
+    if decos:
+        locked_lines = max(d.end_lineno for d in decos)
+    else:
+        locked_lines = 0
+
+    lines = norm_src.split("\n")
+    locked = "\n".join(lines[:locked_lines]) + "\n"
+
+    return locked_lines, locked, indent, norm_src
+
+
+def _get_indent(src):
+    lines = src.split("\n")
+    for line in lines:
+        if not src.strip():
+            continue
+        return len(line) - len(line.lstrip())
+    else:
+        return 0
+
+
 class Function:
     def __init__(self, codefile, fn):
         self.id = next(_c)
@@ -30,12 +65,18 @@ class Function:
         self.glb = fn.__globals__
         self.filename = codefile.filename
         src = inspect.getsource(fn)
+        self.nlocked, self.locked, self.indent, norm_src = _analyze_source(src)
         self.source = {
-            "saved": src,
-            "live": src,
+            "real_saved": src,
+            "saved": norm_src,
+            "live": norm_src,
         }
 
     def recode(self, new_code):
+        new_code = textwrap.dedent(new_code)
+        if not new_code.startswith(self.locked):
+            return {"success": False, "error": "decorators must be preserved"}
+
         filename = f"<{self.name}##{next(_c)}>"
         tree = ast.parse(new_code, filename=filename)
         glb = dict(self.glb)
@@ -49,10 +90,10 @@ class Function:
             filename=filename,
             functions={(self.name, new_fn.__code__.co_firstlineno): self},
         )
-        return True
+        return {"success": True}
 
     def replace(self, new_code):
-        return False
+        return {"success": False, "error": "unsupported operation"}
 
 
 class CodeFile:
@@ -134,6 +175,7 @@ class BackedEditor:
                 "save": self.func_wrapper.recode,
                 "commit": self.func_wrapper.replace,
                 "highlight": self.highlight,
+                "protectedPrefix": self.func_wrapper.nlocked,
             },
         )
 

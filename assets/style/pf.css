@@ -177,6 +177,19 @@ body {
     background: #fa5;
 }
 
+/* TODO: style the protected range when it is properly read-only */
+/*
+.pf-bedit-protected {
+    position: absolute;
+    background: repeating-linear-gradient(
+        45deg,
+        #eee,
+        #eee 10px,
+        transparent 10px,
+        transparent 20px
+      );
+} */
+
 .pf-pin-pane .pf-bedit {
     width: 600px;
 }
