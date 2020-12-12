@@ -1,11 +1,13 @@
 import asyncio
+import builtins
 import inspect
 import json
+import traceback
 from contextlib import contextmanager
 from contextvars import ContextVar
 from itertools import count
 
-from hrepr import Tag, hrepr
+from hrepr import H, Tag, hrepr
 
 from .registry import UNAVAILABLE, callback_registry
 
@@ -89,6 +91,24 @@ class Session:
 
         await self.socket.send(json.dumps(command))
 
+    async def send_result(self, result, *, type, evalid):
+        try:
+            html = hrepr(result)
+        except Exception as exc:
+            try:
+                html = hrepr(exc)
+            except Exception:
+                html = H.pre(
+                    traceback.format_exception(builtins.type(exc), exc, exc.__traceback__)
+                )
+
+        await self.send(
+            command="result",
+            value=html,
+            type=type,
+            evalid=evalid,
+        )
+
     async def recv(self, **command):
         cmd = command.pop("command", "none")
         meth = getattr(self, f"command_{cmd}", None)
@@ -111,9 +131,8 @@ class Session:
             value=expr,
         )
 
-        await self.send(
-            command="result",
-            value=hrepr(result),
+        await self.send_result(
+            result,
             type=typ,
             evalid=ev.evalid,
         )
