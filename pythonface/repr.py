@@ -130,7 +130,7 @@ class PFHrepr(Hrepr):
             body = body["pf-hidden"]
         return self.H.div["pf-collapsible"](
             self.H.div["pf-collapsible-title"](
-                self(title, interactive=False),
+                title,
                 onclick="this.nextSibling.classList.toggle('pf-hidden')",
             ),
             body,
@@ -166,10 +166,7 @@ class PFHrepr(Hrepr):
             )
             curr = curr.tb_next
 
-        return self.H.div["hrepr-body"](
-            *[self(x) for x in parts],
-            exc_proper,
-        )
+        return self.H.div["hrepr-body"](*parts, exc_proper)
 
     def hrepr(self, fn: FunctionType):
         if self.state.depth == 0:

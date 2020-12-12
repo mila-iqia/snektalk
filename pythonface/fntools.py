@@ -51,6 +51,9 @@ class Function:
         )
         return True
 
+    def replace(self, new_code):
+        return False
+
 
 class CodeFile:
     def __init__(self, module, filename=None, functions=None):
@@ -107,15 +110,6 @@ class BackedEditor:
     def __init__(self, func_wrapper, highlight=None):
         self.func_wrapper = func_wrapper
         self.highlight = highlight
-        self.id = func_wrapper.id
-        self.func = func_wrapper.fn
-        self.filename = func_wrapper.filename
-
-    def save(self, new_contents):
-        return self.func_wrapper.recode(new_contents)
-
-    def commit(self, new_contents):
-        return True
 
     @classmethod
     def __hrepr_resources__(cls, H):
@@ -131,14 +125,14 @@ class BackedEditor:
         return H.div["pf-bedit"](
             constructor="BackedEditor",
             options={
-                "funcId": self.id,
+                "funcId": self.func_wrapper.id,
                 "content": {
                     "live": src_live,
                     "saved": src_saved,
                 },
-                "filename": self.filename,
-                "save": self.save,
-                "commit": self.commit,
+                "filename": self.func_wrapper.filename,
+                "save": self.func_wrapper.recode,
+                "commit": self.func_wrapper.replace,
                 "highlight": self.highlight,
             },
         )
