@@ -3,6 +3,7 @@ from types import FunctionType, MethodType, ModuleType
 
 from hrepr import Hrepr, Tag, hjson, hrepr, standard_html
 
+from .fntools import fnedit
 from .registry import callback_registry
 from .session import session
 
@@ -123,6 +124,62 @@ def wrap_onclick(elem, obj, hrepr):
 
 
 class PFHrepr(Hrepr):
+    def collapsible(self, title, body, start_visible=False):
+        body = self.H.div(self(body))
+        if not start_visible:
+            body = body["pf-hidden"]
+        return self.H.div["pf-collapsible"](
+            self.H.div["pf-collapsible-title"](
+                self(title, interactive=False),
+                onclick="this.nextSibling.classList.toggle('pf-hidden')",
+            ),
+            body,
+        )
+
+    def hrepr(self, exc: Exception):
+        exc_proper = self.H.div["hrepr-error", "hrepr-instance", "hreprl-h"](
+            self.H.div["hrepr-title"](type(exc).__name__),
+            self.H.div["hrepr-error-message"](
+                self.H.code(exc.args[0]),
+            ),
+        )
+
+        if self.state.depth > 0:
+            return exc_proper
+
+        tb = exc.__traceback__
+        parts = []
+        curr = tb
+        while curr:
+            fr = curr.tb_frame
+            code = fr.f_code
+            hl = curr.tb_lineno - code.co_firstlineno
+            ed = fnedit(code, highlight=hl)
+            parts.append(
+                self.collapsible(
+                    self.H.div["pf-title-row"](
+                        self.H.span(code.co_name),
+                        self.H.span(f"{code.co_filename}:{fr.f_lineno}"),
+                    ),
+                    self(ed) if ed else self.H.span("Could not find source"),
+                )
+            )
+            curr = curr.tb_next
+
+        return self.H.div["hrepr-body"](
+            *[self(x) for x in parts],
+            exc_proper,
+        )
+
+    def hrepr(self, fn: FunctionType):
+        if self.state.depth == 0:
+            ed = fnedit(fn)
+            if ed is None:
+                return NotImplemented
+            return self.H.div(self(ed))
+        else:
+            return NotImplemented
+
     def hrepr(self, mod: ModuleType):
         exclusions = {
             "__builtins__",

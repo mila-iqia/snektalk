@@ -140,3 +140,85 @@ body {
     color: #777;
     text-align: right;
 }
+
+.pf-collapsible {
+    display: flex;
+    flex-direction: column;
+    justify-items: stretch;
+}
+
+.pf-collapsible-title {
+    cursor: pointer;
+}
+
+.pf-title-row {
+    background-color: #ddd;
+    display: flex;
+    flex-direction: row;
+}
+
+.pf-title-row > *:first-child {
+    flex-grow: 1;
+}
+
+.hrepr-error {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.hrepr-error-message {
+    flex-grow: 1;
+    background: white;
+    padding-left: 5px;
+}
+
+.pf-bedit-hl {
+    position: absolute;
+    background: #fa5;
+}
+
+.pf-pin-pane .pf-bedit {
+    width: 600px;
+}
+
+.pf-bedit {
+    width: 100%;
+    border: 5px solid black;
+    border-bottom: 2px solid;
+    box-sizing: border-box;
+}
+
+.pf-bedit-editor {
+    background: white;
+    border: 5px solid white;
+}
+
+.pf-bedit-editor.ace_focus {
+    background: beige;
+    border: 5px solid beige;
+}
+
+.pf-bedit-saved { border-color: green; }
+.pf-bedit-live { border-color: #8a0; }
+.pf-bedit-dirty { border-color: #f60; }
+.pf-bedit-error { border-color: red; }
+
+.pf-bedit-saved .pf-bedit-status { background-color: green; }
+.pf-bedit-live .pf-bedit-status { background-color: #8a0; }
+.pf-bedit-dirty .pf-bedit-status { background-color: #f60; }
+.pf-bedit-error .pf-bedit-status { background-color: red; }
+
+.pf-bedit-status {
+    display: flex;
+    flex-direction: row;
+    color: white;
+    font-size: 10px;
+}
+
+.pf-bedit-filename {
+    flex: 1;
+}
+
+.pf-hidden {
+    display: none;
+}
