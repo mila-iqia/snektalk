@@ -110,7 +110,6 @@ class BackedEditor:
         self.id = func_wrapper.id
         self.func = func_wrapper.fn
         self.filename = func_wrapper.filename
-        self.src = textwrap.dedent(func_wrapper.source["live"]).strip()
 
     def save(self, new_contents):
         return self.func_wrapper.recode(new_contents)
@@ -126,11 +125,17 @@ class BackedEditor:
         )
 
     def __hrepr__(self, H, hrepr):
+        src_live = textwrap.dedent(self.func_wrapper.source["live"]).strip()
+        src_saved = textwrap.dedent(self.func_wrapper.source["saved"]).strip()
+
         return H.div["pf-bedit"](
             constructor="BackedEditor",
             options={
                 "funcId": self.id,
-                "contents": self.src,
+                "content": {
+                    "live": src_live,
+                    "saved": src_saved,
+                },
                 "filename": self.filename,
                 "save": self.save,
                 "commit": self.commit,

@@ -101,19 +101,16 @@ define(["ace", "repl"], function(ace, repl) {
                 }
             });
 
-            editor.setValue(options.contents, -1);
+            editor.setValue(options.content.live, -1);
             if (options.highlight !== null && options.highlight !== undefined) {
                 let range = new Range(options.highlight, 0, options.highlight, 1);
                 this.mark = editor.session.addMarker(range, "pf-bedit-hl", "fullLine");
             }
 
             this.funcId = options.funcId;
-            this.content = {
-                live: options.contents,
-                saved: options.contents,
-            }
+            this.content = options.content;
             editors.add(this.funcId, this);
-            this.setStatus("saved");
+            this.inferStatus();
 
             editor.getSession().on('change', () => {
                 if (this.status !== "error") {
