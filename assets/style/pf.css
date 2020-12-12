@@ -222,3 +222,7 @@ body {
 .pf-hidden {
     display: none;
 }
+
+.pf-print-str {
+    white-space: pre-wrap;
+}

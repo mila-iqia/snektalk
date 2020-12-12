@@ -1,7 +1,7 @@
 import builtins
 from types import FunctionType, MethodType, ModuleType
 
-from hrepr import Hrepr, Tag, hjson, hrepr, standard_html
+from hrepr import H, Hrepr, Tag, hjson, hrepr, standard_html
 
 from .fntools import fnedit
 from .registry import callback_registry
@@ -43,7 +43,10 @@ def pfprint(*args, **kwargs):
     if sess is None:
         orig_print(*args, **kwargs)
     else:
-        html = hrepr(PrintSequence(args), **kwargs)
+        if all(isinstance(arg, str) for arg in args):
+            html = H.div["pf-print-str"](" ".join(args))
+        else:
+            html = hrepr(PrintSequence(args), **kwargs)
         sess.queue(
             command="result",
             value=html,
