@@ -7,6 +7,8 @@ from collections import defaultdict
 from itertools import count
 from types import CodeType, FunctionType
 
+from .utils import represents
+
 _c = count()
 filename_to_module = {}
 codefiles = {}
@@ -147,6 +149,34 @@ class Function:
         self.source["real_saved"] = indented_code
         return True
 
+    @classmethod
+    def __hrepr_resources__(cls, H):
+        return H.javascript(
+            export="BackedEditor",
+            src="scripts/edit.js",
+        )
+
+    def __hrepr__(self, H, hrepr):
+        src_live = textwrap.dedent(self.source["live"]).strip()
+        src_saved = textwrap.dedent(self.source["saved"]).strip()
+
+        html = H.div["pf-bedit"](
+            constructor="BackedEditor",
+            options={
+                "funcId": self.id,
+                "content": {
+                    "live": src_live,
+                    "saved": src_saved,
+                },
+                "filename": self.filename,
+                "save": self.recode,
+                "commit": self.replace,
+                "highlight": hrepr.config.code_highlight,
+                "protectedPrefix": self.nlocked,
+            },
+        )
+        return represents(self.fn, html)
+
 
 class CodeFile:
     def __init__(self, module, filename=None, functions=None):
@@ -197,41 +227,3 @@ def find_fn(obj):
     cf = codefile(filename)
     fn = cf and cf.get(name, code.co_firstlineno)
     return fn
-
-
-class BackedEditor:
-    def __init__(self, func_wrapper, highlight=None):
-        self.func_wrapper = func_wrapper
-        self.highlight = highlight
-
-    @classmethod
-    def __hrepr_resources__(cls, H):
-        return H.javascript(
-            export="BackedEditor",
-            src="scripts/edit.js",
-        )
-
-    def __hrepr__(self, H, hrepr):
-        src_live = textwrap.dedent(self.func_wrapper.source["live"]).strip()
-        src_saved = textwrap.dedent(self.func_wrapper.source["saved"]).strip()
-
-        return H.div["pf-bedit"](
-            constructor="BackedEditor",
-            options={
-                "funcId": self.func_wrapper.id,
-                "content": {
-                    "live": src_live,
-                    "saved": src_saved,
-                },
-                "filename": self.func_wrapper.filename,
-                "save": self.func_wrapper.recode,
-                "commit": self.func_wrapper.replace,
-                "highlight": self.highlight,
-                "protectedPrefix": self.func_wrapper.nlocked,
-            },
-        )
-
-
-def fnedit(func, **kwargs):
-    fn = find_fn(func)
-    return fn and BackedEditor(fn, **kwargs)

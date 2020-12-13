@@ -3,9 +3,10 @@ from types import FunctionType, MethodType, ModuleType
 
 from hrepr import H, Hrepr, Tag, hjson, hrepr, standard_html
 
-from .fntools import fnedit
+from .fntools import find_fn
 from .registry import callback_registry
 from .session import session
+from .utils import join, represents
 
 ##########################
 # Special JSON converter #
@@ -87,38 +88,6 @@ def hdir(obj):
 ###############################
 
 
-def _default_click(obj, evt):
-    ctx = session.get()
-    if evt.get("shiftKey", False):
-        ctx.queue(
-            command="result",
-            value=hrepr(obj),
-            type="print",
-        )
-    else:
-        varname = ctx.session.getvar(obj)
-        ctx.queue(
-            command="pastevar",
-            value=varname,
-        )
-
-
-def join(elems, sep):
-    rval = [elems[0]]
-    for elem in elems[1:]:
-        rval.append(sep)
-        rval.append(elem)
-    return rval
-
-
-def represents(obj, elem, pinnable=False):
-    if obj is None:
-        return elem
-    else:
-        method_id = callback_registry.register(MethodType(_default_click, obj))
-        return elem(objid=method_id, pinnable=pinnable)
-
-
 def wrap_onclick(elem, obj, hrepr):
     if not isinstance(obj, Tag) and hrepr.config.interactive is not False:
         return represents(obj, elem, pinnable=True)
@@ -157,14 +126,16 @@ class PFHrepr(Hrepr):
             fr = curr.tb_frame
             code = fr.f_code
             hl = curr.tb_lineno - code.co_firstlineno
-            ed = fnedit(code, highlight=hl)
+            ed = find_fn(code)
             parts.append(
                 self.collapsible(
                     self.H.div["pf-title-row"](
                         self.H.span(code.co_name),
                         self.H.span(f"{code.co_filename}:{fr.f_lineno}"),
                     ),
-                    self(ed) if ed else self.H.span("Could not find source"),
+                    self(ed, code_highlight=hl)
+                    if ed
+                    else self.H.span("Could not find source"),
                 )
             )
             curr = curr.tb_next
@@ -173,7 +144,7 @@ class PFHrepr(Hrepr):
 
     def hrepr(self, fn: FunctionType):
         if self.state.depth == 0:
-            ed = fnedit(fn)
+            ed = find_fn(fn)
             if ed is None:
                 return NotImplemented
             return self.H.div(self(ed))
