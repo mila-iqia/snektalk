@@ -3,6 +3,7 @@ import inspect
 import sys
 import textwrap
 import weakref
+from ovld import ovld
 from collections import defaultdict
 from itertools import count
 from types import CodeType, FunctionType
@@ -178,13 +179,33 @@ class Function:
         return represents(self.fn, html)
 
 
+@ovld
+def dig(self, obj: FunctionType):
+    return {inspect.unwrap(obj)}
+
+
+@ovld
+def dig(self, obj: (classmethod, staticmethod)):
+    return self(obj.__func__)
+
+
+@ovld
+def dig(self, obj: property):
+    return self(obj.fget) | self(obj.fset) | self(obj.fdel)
+
+
+@ovld
+def dig(self, object):
+    return set()
+
+
 class CodeFile:
     def __init__(self, module, filename=None, functions=None):
         def acq(name, value):
-            if isinstance(value, FunctionType):
-                code = value.__code__
+            for fn in dig(value):
+                code = fn.__code__
                 if code.co_filename == self.filename:
-                    fnobj = Function(self, value)
+                    fnobj = Function(self, fn)
                     self.functions[name, code.co_firstlineno] = fnobj
 
         self.module = module
@@ -217,7 +238,10 @@ def codefile(filename):
 
 
 def find_fn(obj):
-    if isinstance(obj, FunctionType):
+    if obj is None:
+        return None
+    elif isinstance(obj, FunctionType):
+        obj = inspect.unwrap(obj)
         code = obj.__code__
     else:
         code = obj

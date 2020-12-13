@@ -95,6 +95,10 @@ def wrap_onclick(elem, obj, hrepr):
         return elem
 
 
+def shortname(obj):
+    return getattr(obj, "__name__", f"<{type(obj).__name__}>")
+
+
 class PFHrepr(Hrepr):
     def collapsible(self, title, body, start_visible=False):
         body = self.H.div(self(body))
@@ -242,6 +246,37 @@ class PFHrepr(Hrepr):
             type=title,
             vertical=True,
         )
+
+    def hrepr_short(self, clsm: (classmethod, staticmethod)):
+        return self.H.defn(type(clsm).__name__, shortname(clsm.__func__))
+
+    def hrepr(self, clsm: (classmethod, staticmethod)):
+        fn = clsm.__func__
+        if self.state.depth == 0 and isinstance(fn, FunctionType):
+            ed = find_fn(fn)
+            if ed is None:
+                return NotImplemented
+            return self.H.div(self(ed))
+        else:
+            return NotImplemented
+
+    def hrepr_short(self, prop: property):
+        return self.H.defn(
+            type(prop).__name__, shortname(prop.fget or prop.fset or prop.fdel)
+        )
+
+    def hrepr(self, prop: property):
+        if self.state.depth == 0:
+            title = "property"
+            return self.H.instance(
+                H.pair("fget", self(find_fn(prop.fget)), delimiter="="),
+                H.pair("fset", self(find_fn(prop.fset)), delimiter="="),
+                H.pair("fdel", self(find_fn(prop.fdel)), delimiter="="),
+                type=title,
+                vertical=True,
+            )
+        else:
+            return NotImplemented
 
 
 #####################################
