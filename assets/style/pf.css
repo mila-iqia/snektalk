@@ -49,7 +49,26 @@ body {
 
 .pf-input-box {
     padding: 5px;
-    padding-bottom: 15px;
+    /* padding-bottom: 15px; */
+}
+
+.pf-status-bar {
+    height: 1.5em;
+    text-align: right;
+    color: #888;
+}
+
+.pf-status-normal {
+    transition: color 2s ease;
+    color: #888;
+}
+
+.pf-status-error {
+    color: red;
+}
+
+.pf-status-flash-error {
+    background: #fbb;
 }
 
 .pf-line {

@@ -146,8 +146,9 @@ class Session:
             cb = callback_registry.resolve(int(id))
         except KeyError:
             ev.queue(
-                command="result",
-                value=hrepr(UNAVAILABLE),
+                command="status",
+                type="error",
+                value="value is unavailable; it might have been garbage-collected",
             )
             return
 

@@ -48,6 +48,7 @@ export class Repl {
         this.pane = target.querySelector(".pf-pane");
         this.pinpane = target.querySelector(".pf-pin-pane");
         this.inputBox = target.querySelector(".pf-input");
+        this.statusBar = target.querySelector(".pf-status-bar");
         this._setupEditor(this.inputBox);
         this.historyCurrent = 0;
         this.history = [""];
@@ -413,6 +414,25 @@ export class Repl {
             let varname = data.value;
             this.editor.session.insert(this.editor.getCursorPosition(), varname);
             this.editor.focus();
+        }
+        else if (data.command == "status") {
+            let timestamp = (new Date()).toLocaleTimeString("en-gb");
+            this.statusBar.className =
+                `pf-status-bar pf-status-${data.type} pf-status-flash-${data.type}`;
+            this.statusBar.innerText = `${data.value} -- ${timestamp}`;
+            setTimeout(
+                () => {
+                    this.statusBar.classList.remove(`pf-status-${data.type}`);
+                    this.statusBar.classList.add(`pf-status-normal`);
+                },
+                10000
+            );
+            setTimeout(
+                () => {
+                    this.statusBar.classList.remove(`pf-status-flash-${data.type}`);
+                },
+                50
+            );
         }
         else {
             console.error("Received an unknown command:", data.command);
