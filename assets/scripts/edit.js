@@ -102,6 +102,7 @@ define(["ace", "repl"], function(ace, repl) {
                 exec: async editor => {
                     let response = await options.commit(editor.getValue());
                     if (response.success) {
+                        editors.signal(this.funcId, editor.getValue(), "live");
                         editors.signal(this.funcId, editor.getValue(), "saved");
                     }
                     else {

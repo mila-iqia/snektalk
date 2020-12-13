@@ -12,6 +12,10 @@ filename_to_module = {}
 codefiles = {}
 
 
+class InvalidSourceException(Exception):
+    pass
+
+
 def _map_filenames():
     # TODO: there's probably a hook that we can use to automatically analyze
     # modules when they are imported.
@@ -19,6 +23,21 @@ def _map_filenames():
         fname = getattr(mod, "__file__", None)
         if fname:
             filename_to_module[fname] = mod
+
+
+def _get_fnode(tree, expected_name=None):
+    assert isinstance(tree, ast.Module)
+    if len(tree.body) == 1:
+        (fn,) = tree.body
+        if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if expected_name and expected_name != fn.name:
+                raise InvalidSourceException(
+                    f"the function must be named '{expected_name}'"
+                )
+            return fn
+    raise InvalidSourceException(
+        "the code may only contain a function definition"
+    )
 
 
 def _analyze_source(source):
@@ -41,7 +60,9 @@ def _analyze_source(source):
         locked_lines = 0
 
     lines = norm_src.split("\n")
-    locked = "\n".join(lines[:locked_lines]) + "\n"
+    locked = "\n".join(lines[:locked_lines])
+    if locked:
+        locked += "\n"
 
     return locked_lines, locked, indent, norm_src
 
@@ -59,6 +80,7 @@ def _get_indent(src):
 class Function:
     def __init__(self, codefile, fn):
         self.id = next(_c)
+        self.codefile = codefile
         self.fn = fn
         self.name = fn.__name__
         self.orig_code = fn.__code__
@@ -78,7 +100,19 @@ class Function:
             return {"success": False, "error": "decorators must be preserved"}
 
         filename = f"<{self.name}##{next(_c)}>"
-        tree = ast.parse(new_code, filename=filename)
+
+        try:
+            tree = ast.parse(new_code, filename=filename)
+            fnode = _get_fnode(tree, self.name)
+        except (InvalidSourceException, SyntaxError) as exc:
+            return {
+                "success": False,
+                "error": exc.args[0]
+            }
+
+        # Remove the decorators
+        fnode.decorator_list.clear()
+
         glb = dict(self.glb)
         exec(compile(tree, filename, mode="exec"), glb)
         new_fn = glb[self.name]
@@ -93,7 +127,43 @@ class Function:
         return {"success": True}
 
     def replace(self, new_code):
-        return {"success": False, "error": "unsupported operation"}
+        new_code = textwrap.dedent(new_code)
+        recode_results = self.recode(new_code)
+        if not recode_results["success"]:
+            return recode_results
+
+        old = self.source["real_saved"]
+        try:
+            with open(self.codefile.filename) as fd:
+                content = fd.read()
+                idx = content.find(old)
+                if idx == -1:
+                    return {
+                        "success": False,
+                        "error": "cannot update file, it might have changed"
+                    }
+                if content.find(old, idx + 1) != -1:
+                    return {
+                        "success": False,
+                        "error": "ambiguous: multiple identical functions"
+                    }
+                indented_code = textwrap.indent(new_code, " " * self.indent)
+                if not indented_code.endswith("\n"):
+                    indented_code += "\n"
+                new_content = content.replace(old, indented_code)
+
+            with open(self.codefile.filename, "w") as fd:
+                fd.write(new_content)
+
+            self.source["saved"] = new_code
+            self.source["real_saved"] = indented_code
+            return {"success": True}
+
+        except Exception as exc:
+            return {
+                "success": False,
+                "error": exc.args[0]
+            }
 
 
 class CodeFile:
