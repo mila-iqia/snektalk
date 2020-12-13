@@ -401,9 +401,13 @@ export class Repl {
             this.append(elem, "echo");
         }
         else if (data.command == "response") {
-            // TODO: do something with reject
             let {resolve, reject} = this.$responseMap[data.response_id];
-            resolve(data.value);
+            if (data.error) {
+                reject(data.error);
+            }
+            else {
+                resolve(data.value);
+            }
         }
         else if (data.command == "pastevar") {
             let varname = data.value;

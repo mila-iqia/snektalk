@@ -99,7 +99,9 @@ class Session:
                 html = hrepr(exc)
             except Exception:
                 html = H.pre(
-                    traceback.format_exception(builtins.type(exc), exc, exc.__traceback__)
+                    traceback.format_exception(
+                        builtins.type(exc), exc, exc.__traceback__
+                    )
                 )
 
         await self.send(
@@ -149,14 +151,25 @@ class Session:
             )
             return
 
-        with ev.push_context():
-            if inspect.isawaitable(cb):
-                result = await cb(*arguments)
-            else:
-                result = cb(*arguments)
+        try:
+            with ev.push_context():
+                if inspect.isawaitable(cb):
+                    result = await cb(*arguments)
+                else:
+                    result = cb(*arguments)
 
-        await self.send(
-            command="response",
-            value=result,
-            response_id=response_id,
-        )
+            await self.send(
+                command="response",
+                value=result,
+                response_id=response_id,
+            )
+
+        except Exception as exc:
+            await self.send(
+                command="response",
+                error={
+                    "type": type(exc).__name__,
+                    "message": str(exc.args[0]) if exc.args else None,
+                },
+                response_id=response_id,
+            )

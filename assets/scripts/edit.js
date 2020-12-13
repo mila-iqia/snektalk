@@ -69,45 +69,50 @@ define(["ace", "repl"], function(ace, repl) {
             editor.setTheme("ace/theme/xcode");
             editor.session.setMode("ace/mode/python");
 
+            let save = async (editor, commit) => {
+                try {
+                    let method = commit ? "commit" : "save";
+                    let response = await options[method](editor.getValue());
+                    editors.signal(this.funcId, editor.getValue(), "live");
+                    if (commit) {
+                        editors.signal(this.funcId, editor.getValue(), "saved");
+                    }
+                    return true;
+                }
+                catch(exc) {
+                    let message = (
+                        exc.type === "InvalidSourceException"
+                        ? exc.message
+                        : `${exc.type}: ${exc.message}`
+                    )
+                    this.setStatus("error", message);
+                    return false;
+                }
+            }
+
             editor.commands.addCommand({
                 name: "save",
                 bindKey: "Cmd+S",
                 exec: async editor => {
-                    let response = await options.save(editor.getValue());
-                    if (response.success) {
-                        editors.signal(this.funcId, editor.getValue(), "live");
-                    }
-                    else {
-                        this.setStatus("error", response.error);
-                    }
+                    await save(editor, false);
                 }
             });
+
             editor.commands.addCommand({
                 name: "save-return",
                 bindKey: "Ctrl+Enter",
                 exec: async editor => {
-                    let response = await options.save(editor.getValue());
-                    if (response.success) {
-                        editors.signal(this.funcId, editor.getValue(), "live");
+                    if (await save(editor, false)) {
                         repl.mainRepl.editor.focus();
-                    }
-                    else {
-                        this.setStatus("error", response.error);
                     }
                 }
             });
+
             editor.commands.addCommand({
                 name: "commit",
                 bindKey: "Cmd+Shift+S",
                 exec: async editor => {
-                    let response = await options.commit(editor.getValue());
-                    if (response.success) {
-                        editors.signal(this.funcId, editor.getValue(), "live");
-                        editors.signal(this.funcId, editor.getValue(), "saved");
-                    }
-                    else {
-                        this.setStatus("error", response.error);
-                    }
+                    await save(editor, true);
                 }
             });
 

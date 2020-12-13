@@ -97,18 +97,12 @@ class Function:
     def recode(self, new_code):
         new_code = textwrap.dedent(new_code)
         if not new_code.startswith(self.locked):
-            return {"success": False, "error": "decorators must be preserved"}
+            raise InvalidSourceException("decorators must be preserved")
 
         filename = f"<{self.name}##{next(_c)}>"
 
-        try:
-            tree = ast.parse(new_code, filename=filename)
-            fnode = _get_fnode(tree, self.name)
-        except (InvalidSourceException, SyntaxError) as exc:
-            return {
-                "success": False,
-                "error": exc.args[0]
-            }
+        tree = ast.parse(new_code, filename=filename)
+        fnode = _get_fnode(tree, self.name)
 
         # Remove the decorators
         fnode.decorator_list.clear()
@@ -124,46 +118,34 @@ class Function:
             filename=filename,
             functions={(self.name, new_fn.__code__.co_firstlineno): self},
         )
-        return {"success": True}
+        return True
 
     def replace(self, new_code):
         new_code = textwrap.dedent(new_code)
         recode_results = self.recode(new_code)
-        if not recode_results["success"]:
-            return recode_results
-
         old = self.source["real_saved"]
-        try:
-            with open(self.codefile.filename) as fd:
-                content = fd.read()
-                idx = content.find(old)
-                if idx == -1:
-                    return {
-                        "success": False,
-                        "error": "cannot update file, it might have changed"
-                    }
-                if content.find(old, idx + 1) != -1:
-                    return {
-                        "success": False,
-                        "error": "ambiguous: multiple identical functions"
-                    }
-                indented_code = textwrap.indent(new_code, " " * self.indent)
-                if not indented_code.endswith("\n"):
-                    indented_code += "\n"
-                new_content = content.replace(old, indented_code)
+        with open(self.codefile.filename) as fd:
+            content = fd.read()
+            idx = content.find(old)
+            if idx == -1:
+                raise InvalidSourceException(
+                    "cannot update file, it might have changed"
+                )
+            if content.find(old, idx + 1) != -1:
+                raise InvalidSourceException(
+                    "ambiguous: multiple identical functions"
+                )
+            indented_code = textwrap.indent(new_code, " " * self.indent)
+            if not indented_code.endswith("\n"):
+                indented_code += "\n"
+            new_content = content.replace(old, indented_code)
 
-            with open(self.codefile.filename, "w") as fd:
-                fd.write(new_content)
+        with open(self.codefile.filename, "w") as fd:
+            fd.write(new_content)
 
-            self.source["saved"] = new_code
-            self.source["real_saved"] = indented_code
-            return {"success": True}
-
-        except Exception as exc:
-            return {
-                "success": False,
-                "error": exc.args[0]
-            }
+        self.source["saved"] = new_code
+        self.source["real_saved"] = indented_code
+        return True
 
 
 class CodeFile:
