@@ -356,7 +356,15 @@ export class Repl {
     
     send(message) {
         // Send a message to PythonFace
-        this.socket.send(JSON.stringify(message));
+        if (this.closed) {
+            this.setStatus({
+                type: "error",
+                value: "operation failed because the connection is closed",
+            });
+        }
+        else {
+            this.socket.send(JSON.stringify(message));
+        }
     }
 
     append(elem, type) {
@@ -369,6 +377,26 @@ export class Repl {
         elem.className = "pf-result pf-t-" + type;
         this.pane.appendChild(wrapper);
         return wrapper;
+    }
+
+    setStatus(data) {
+        let timestamp = (new Date()).toLocaleTimeString("en-gb");
+        this.statusBar.className =
+            `pf-status-bar pf-status-${data.type} pf-status-flash-${data.type}`;
+        this.statusBar.innerText = `${data.value} -- ${timestamp}`;
+        setTimeout(
+            () => {
+                this.statusBar.classList.remove(`pf-status-${data.type}`);
+                this.statusBar.classList.add(`pf-status-normal`);
+            },
+            10000
+        );
+        setTimeout(
+            () => {
+                this.statusBar.classList.remove(`pf-status-flash-${data.type}`);
+            },
+            50
+        );
     }
 
     process_message(data) {
@@ -416,23 +444,7 @@ export class Repl {
             this.editor.focus();
         }
         else if (data.command == "status") {
-            let timestamp = (new Date()).toLocaleTimeString("en-gb");
-            this.statusBar.className =
-                `pf-status-bar pf-status-${data.type} pf-status-flash-${data.type}`;
-            this.statusBar.innerText = `${data.value} -- ${timestamp}`;
-            setTimeout(
-                () => {
-                    this.statusBar.classList.remove(`pf-status-${data.type}`);
-                    this.statusBar.classList.add(`pf-status-normal`);
-                },
-                10000
-            );
-            setTimeout(
-                () => {
-                    this.statusBar.classList.remove(`pf-status-flash-${data.type}`);
-                },
-                50
-            );
+            this.setStatus(data);
         }
         else {
             console.error("Received an unknown command:", data.command);
@@ -445,6 +457,22 @@ export class Repl {
         socket.addEventListener('message', event => {
             let data = JSON.parse(event.data);
             this.process_message(data);
+        });
+
+        socket.addEventListener('error', event => {
+            this.closed = true;
+            this.setStatus({
+                type: "error",
+                value: "a connection error occurred",
+            });
+        });
+
+        socket.addEventListener('close', event => {
+            this.closed = true;
+            this.setStatus({
+                type: "normal",
+                value: "the connection was closed",
+            });
         });
 
         this.socket = socket;
