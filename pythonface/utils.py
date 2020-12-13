@@ -1,7 +1,28 @@
-from types import MethodType
+from hrepr import H, hjson, hrepr
+from types import FunctionType, MethodType
 
 from .registry import callback_registry
 from .session import session
+
+
+##########################
+# Special JSON converter #
+##########################
+
+
+@hjson.dump.variant
+def _pf_hjson(self, fn: (MethodType, FunctionType)):
+    method_id = callback_registry.register(fn)
+    return f"$$PFCB({method_id})"
+
+
+def pf_hjson(obj):
+    return str(_pf_hjson(obj))
+
+
+#############
+# Utilities #
+#############
 
 
 def join(elems, sep):
@@ -10,6 +31,11 @@ def join(elems, sep):
         rval.append(sep)
         rval.append(elem)
     return rval
+
+
+###########################
+# Click/shift-click logic #
+###########################
 
 
 def _default_click(obj, evt):

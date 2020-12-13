@@ -1,26 +1,11 @@
 import builtins
 from types import FunctionType, MethodType, ModuleType
 
-from hrepr import H, Hrepr, Tag, hjson, hrepr, standard_html
+from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .fntools import find_fn
-from .registry import callback_registry
 from .session import session
-from .utils import join, represents
-
-##########################
-# Special JSON converter #
-##########################
-
-
-@hjson.dump.variant
-def _pf_hjson(self, fn: (MethodType, FunctionType)):
-    method_id = callback_registry.register(fn)
-    return f"$$PFCB({method_id},this,event)"
-
-
-def pf_hjson(obj):
-    return str(_pf_hjson(obj))
+from .utils import join, pf_hjson, represents
 
 
 ####################
