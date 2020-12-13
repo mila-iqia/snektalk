@@ -120,6 +120,8 @@ define(["ace", "repl"], function(ace, repl) {
             if (options.highlight !== null && options.highlight !== undefined) {
                 let range = new Range(options.highlight, 0, options.highlight, 1);
                 this.mark = editor.session.addMarker(range, "pf-bedit-hl", "fullLine");
+                editor.moveCursorTo(options.highlight, 0);
+                editor.renderer.scrollCursorIntoView();
             }
 
             // TODO: Make the range read-only. This is a bit difficult to do

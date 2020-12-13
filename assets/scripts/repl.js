@@ -148,7 +148,14 @@ export class Repl {
                 response_id: response_id,
                 arguments: args
             });
-            return await response;
+            try {
+                return await response;
+            }
+            catch(exc) {
+                let message = `${exc.type}: ${exc.message}`;
+                this.setStatus({type: "error", value: message});
+                return false;
+            }
         }
         let evt = window.event;
 
