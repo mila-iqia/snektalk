@@ -55,7 +55,6 @@ define(["ace", "repl"], function(ace, repl) {
             element.appendChild(status);
 
             let editor = ace.edit(edelem);
-            // ace.$$allEditors.push(new WeakRef(editor));
             repl.allEditors.push(new WeakRef(editor));
             this.editor = editor;
             editor.setOptions({
@@ -190,5 +189,5 @@ define(["ace", "repl"], function(ace, repl) {
         }
     }
 
-    return (...args) => new BackedEditor(...args)
+    return BackedEditor;
 })
