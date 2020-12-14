@@ -13,9 +13,15 @@ from .registry import UNAVAILABLE, callback_registry
 
 _c = count()
 
-session = ContextVar("session", default=None)
+_current_evaluator = ContextVar("current_evaluator", default=None)
 
-sessions = {}
+
+def current_session():
+    return _current_evaluator.get().session
+
+
+def current_evaluator():
+    return _current_evaluator.get()
 
 
 class Evaluator:
@@ -25,11 +31,11 @@ class Evaluator:
 
     @contextmanager
     def push_context(self):
-        token = session.set(self)
+        token = _current_evaluator.set(self)
         try:
             yield
         finally:
-            session.reset(token)
+            _current_evaluator.reset(token)
 
     def eval(self, expr):
         with self.push_context():

@@ -4,7 +4,7 @@ from types import FunctionType, MethodType, ModuleType
 from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .fntools import find_fn
-from .session import session
+from .session import current_evaluator
 from .utils import join, pf_hjson, represents
 
 ####################
@@ -24,15 +24,15 @@ class PrintSequence(tuple):
 
 def pfprint(*args, **kwargs):
     builtins.print = orig_print
-    sess = session.get()
-    if sess is None:
+    ev = current_evaluator()
+    if ev is None:
         orig_print(*args, **kwargs)
     else:
         if all(isinstance(arg, str) for arg in args):
             html = H.div["pf-print-str"](" ".join(args))
         else:
             html = hrepr(PrintSequence(args), **kwargs)
-        sess.queue(
+        ev.queue(
             command="result",
             value=html,
             type="print",

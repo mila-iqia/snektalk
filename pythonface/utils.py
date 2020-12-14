@@ -4,7 +4,7 @@ from types import FunctionType, MethodType
 from hrepr import H, hjson, hrepr
 
 from .registry import callback_registry
-from .session import session
+from .session import current_evaluator
 
 _count = count()
 
@@ -43,7 +43,7 @@ def join(elems, sep):
 
 
 def _default_click(obj, evt):
-    ctx = session.get()
+    ctx = current_evaluator()
     if evt.get("shiftKey", False):
         ctx.queue(
             command="result",
@@ -100,7 +100,7 @@ class AJSCaller(BaseJSCaller):
         async def call(*args):
             code = self._getcode(method_name, args)
             prom = asyncio.Promise()
-            sess.queue(
+            current_evaluator().queue(
                 command="eval",
                 value=code,
                 promise=prom,
@@ -121,8 +121,7 @@ class JSCaller(BaseJSCaller):
             if self._return_hrepr:
                 return H.javascript(code)
             else:
-                sess = session.get()
-                sess.queue(
+                current_evaluator().queue(
                     command="eval",
                     value=code,
                 )
@@ -138,8 +137,7 @@ class Interactor:
         instance = cls(*args, **kwargs)
         html = hrepr(instance)
         if nav:
-            sess = session.get()
-            sess.queue(
+            current_evaluator().queue(
                 command="set_nav",
                 value=html,
             )
