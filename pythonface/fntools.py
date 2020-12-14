@@ -3,10 +3,11 @@ import inspect
 import sys
 import textwrap
 import weakref
-from ovld import ovld
 from collections import defaultdict
 from itertools import count
 from types import CodeType, FunctionType
+
+from ovld import ovld
 
 from .utils import represents
 

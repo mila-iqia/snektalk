@@ -255,10 +255,20 @@ body {
     flex: 1;
 }
 
+.pf-bedit-state {
+    margin-left: 20px;
+}
+
 .pf-hidden {
     display: none;
 }
 
 .pf-print-str {
     white-space: pre-wrap;
+}
+
+.hreprk-classmethod > .hrepr-defn-key,
+.hreprk-staticmethod > .hrepr-defn-key,
+.hreprk-property > .hrepr-defn-key {
+	color: #080;
 }

@@ -83,7 +83,7 @@ define(["ace", "repl"], function(ace, repl) {
                         exc.type === "InvalidSourceException"
                         ? exc.message
                         : `${exc.type}: ${exc.message}`
-                    )
+                    );
                     this.setStatus("error", message);
                     return false;
                 }
@@ -164,9 +164,6 @@ define(["ace", "repl"], function(ace, repl) {
         }
 
         setStatus(status, message) {
-            if (this.status === status) {
-                return;
-            }
             this.status = status;
             this.element.className = "pf-bedit pf-bedit-" + status;
             if (status === "saved") {

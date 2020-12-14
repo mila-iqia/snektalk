@@ -7,7 +7,6 @@ from .fntools import find_fn
 from .session import session
 from .utils import join, pf_hjson, represents
 
-
 ####################
 # PythonFace print #
 ####################
@@ -136,7 +135,7 @@ class PFHrepr(Hrepr):
             ed = find_fn(fn)
             if ed is None:
                 return NotImplemented
-            return self.H.div(self(ed))
+            return self(ed)
         else:
             return NotImplemented
 
