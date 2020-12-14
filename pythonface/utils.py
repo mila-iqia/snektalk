@@ -179,20 +179,34 @@ class Interactor:
     def __hrepr__(self, H, hrepr):
         params = pf_hjson(self.parameters)
         self.active = True
+        tmpid = f"$$tmp{next(_count)}"
         return H.div(
-            H.div(id=self.jsid),
+            H.div(id=tmpid),
             H.script(
                 f"""
-                define(
-                    '{self.jsid}',
-                    ['{self.js_constructor}'],
-                    ctor => {{
-                        let elem = document.getElementById('{self.jsid}');
-                        let obj = new ctor(elem, {params});
-                        return new WeakRef(obj);
+                (() => {{
+                    let elem = document.getElementById('{tmpid}');
+                    let existing = document.getElementById('{self.jsid}');
+                    if (existing && existing.handler) {{
+                        // Move the existing div
+                        elem.parentElement.replaceChild(
+                            existing, elem
+                        );
                     }}
-                );
-                require(['{self.jsid}'], _ => null);
+                    else {{
+                        elem.id = '{self.jsid}';
+                        define(
+                            '{self.jsid}',
+                            ['{self.js_constructor}'],
+                            ctor => {{
+                                let obj = new ctor(elem, {params});
+                                elem.handler = obj;
+                                return new WeakRef(obj);
+                            }}
+                        );
+                        require(['{self.jsid}'], _ => null);
+                    }}
+                }})();
                 """
             ),
         )

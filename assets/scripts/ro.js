@@ -18,7 +18,6 @@ define(["ace", "repl"], (ace, repl) => {
 
             this.status = status
             this.element = element;
-            element.editor = this;
             let editor = ace.edit(edelem);
             this.editor = editor;
             editor.setOptions({
