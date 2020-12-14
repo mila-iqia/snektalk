@@ -49,11 +49,15 @@ body {
 
 .pf-input-box {
     padding: 5px;
-    /* padding-bottom: 15px; */
+}
+
+.pf-nav {
+    width: 100%;
 }
 
 .pf-status-bar {
     height: 1.5em;
+    min-height: 1.5em;
     text-align: right;
     color: #888;
 }

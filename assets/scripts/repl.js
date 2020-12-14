@@ -49,6 +49,7 @@ export class Repl {
         this.pinpane = target.querySelector(".pf-pin-pane");
         this.inputBox = target.querySelector(".pf-input");
         this.statusBar = target.querySelector(".pf-status-bar");
+        this.nav = target.querySelector(".pf-nav");
         this._setupEditor(this.inputBox);
         this.historyCurrent = 0;
         this.history = [""];
@@ -457,6 +458,13 @@ export class Repl {
         }
         else if (data.command == "status") {
             this.setStatus(data);
+        }
+        else if (data.command == "set_nav") {
+            this.nav.innerHTML = "";
+            if (data.value) {
+                let elem = this.reify(data.value);
+                this.nav.appendChild(elem);
+            }
         }
         else {
             console.error("Received an unknown command:", data.command);
