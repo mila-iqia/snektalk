@@ -130,6 +130,16 @@ class PFHrepr(Hrepr):
 
         return self.H.div["hrepr-body"](*parts, exc_proper)
 
+    def hrepr(self, r: range):
+        rval = self.H.instance(
+            self(r.start),
+            self(r.stop),
+            type="range"
+        )
+        if r.step != 1:
+            rval = rval(self(r.step))
+        return rval
+
     def hrepr(self, fn: FunctionType):
         if self.state.depth == 0:
             ed = find_fn(fn)
