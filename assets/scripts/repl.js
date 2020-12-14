@@ -242,8 +242,13 @@ export class Repl {
                 command: "submit",
                 expr: val,
             });
-            this.history[0] = val;
-            this.history.unshift("");
+            if (this.history[1] !== val) {
+                this.history[0] = val;
+                this.history.unshift("");
+            }
+            else {
+                this.history[0] = "";
+            }
             this.historyCurrent = 0;
         }
 
@@ -321,7 +326,7 @@ export class Repl {
             this.history[0] = this.editor.getValue();
         }
         let n = this.history.length;
-        let new_position = (this.historyCurrent - delta + n) % n;
+        let new_position = Math.max(0, Math.min(n - 1, this.historyCurrent - delta));
         if (new_position !== this.historyCurrent) {
             this.historyCurrent = new_position;
             // The -delta will put the cursor at the beginning if we come
