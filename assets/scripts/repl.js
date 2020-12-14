@@ -471,6 +471,9 @@ export class Repl {
                 this.nav.appendChild(elem);
             }
         }
+        else if (data.command == "eval") {
+            eval(data.value);
+        }
         else {
             console.error("Received an unknown command:", data.command);
         }
