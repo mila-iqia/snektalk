@@ -149,15 +149,30 @@ export class Repl {
                 response_id: response_id,
                 arguments: args
             });
+            return await response;
+        }
+
+        const execNow = async () => {
             try {
-                return await response;
+                await exec({
+                    type: evt.type,
+                    button: evt.button,
+                    shiftKey: evt.shiftKey,
+                    altKey: evt.altKey,
+                    ctrlKey: evt.ctrlKey,
+                    metaKey: evt.metaKey,
+                    key: evt.key,
+                    offsetX: evt.offsetX,
+                    offsetY: evt.offsetY,
+                });
             }
             catch(exc) {
                 let message = `${exc.type}: ${exc.message}`;
                 this.setStatus({type: "error", value: message});
-                return false;
+                throw exc;
             }
         }
+
         let evt = window.event;
 
         if (evt === undefined || evt.type === "load") {
@@ -171,17 +186,7 @@ export class Repl {
             // immediately.
             evt.preventDefault();
             evt.stopPropagation();
-            exec({
-                type: evt.type,
-                button: evt.button,
-                shiftKey: evt.shiftKey,
-                altKey: evt.altKey,
-                ctrlKey: evt.ctrlKey,
-                metaKey: evt.metaKey,
-                key: evt.key,
-                offsetX: evt.offsetX,
-                offsetY: evt.offsetY,
-            });
+            execNow();
         }
     }
 
