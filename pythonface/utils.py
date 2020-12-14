@@ -189,3 +189,13 @@ class Interactor:
                 """
             ),
         )
+
+
+####################
+# Misc interactors #
+####################
+
+
+class ReadOnly(Interactor):
+    js_constructor = "ReadOnlyEditor"
+    js_source = "/scripts/ro.js"

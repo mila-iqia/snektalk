@@ -267,6 +267,17 @@ body {
     white-space: pre-wrap;
 }
 
+.pf-bedit-readonly {
+    min-width: 500px;
+    width: 100%;
+    border: 1px solid #888;
+    box-sizing: border-box;
+}
+
+.pf-bedit-readonly > .pf-bedit-status {
+    color: #888;
+}
+
 .hreprk-classmethod > .hrepr-defn-key,
 .hreprk-staticmethod > .hrepr-defn-key,
 .hreprk-property > .hrepr-defn-key {
