@@ -58,14 +58,21 @@ def _default_click(obj, evt):
         )
 
 
+def _safe_set(elem, **props):
+    if elem.is_virtual():
+        return H.div(elem, **props)
+    else:
+        return elem(**props)
+
+
 def represents(obj, elem, pinnable=False):
     if obj is None:
         return elem
     elif elem.get_attribute("objid", None) is not None:
-        return elem(pinnable=pinnable)
+        return _safe_set(elem, pinnable=pinnable)
     else:
         method_id = callback_registry.register(MethodType(_default_click, obj))
-        return elem(objid=method_id, pinnable=pinnable)
+        return _safe_set(elem, objid=method_id, pinnable=pinnable)
 
 
 ##############
