@@ -116,6 +116,24 @@ class Session:
         meth = getattr(self, f"command_{cmd}", None)
         await meth(**command)
 
+    async def run(self, fn):
+        ev = Evaluator(self)
+        with ev.push_context():
+            try:
+                result = fn()
+                typ = "expression"
+            except Exception as e:
+                result = e
+                typ = "exception"
+
+        self.glb["_"] = result
+
+        await self.send_result(
+            result,
+            type=typ,
+            evalid=ev.evalid,
+        )
+
     async def command_submit(self, *, expr):
         ev = Evaluator(self)
 
