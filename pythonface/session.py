@@ -55,6 +55,7 @@ class EvaluatorContext:
 class Session:
     def __init__(self, glb, socket):
         self.glb = glb
+        self.blt = vars(builtins)
         self.idmap = {}
         self.varcount = count(1)
         self.socket = socket
@@ -111,7 +112,7 @@ class Session:
         else:
             varname = self.newvar()
             self.idmap[ido] = varname
-        self.glb[varname] = obj
+        self.blt[varname] = obj
         return varname
 
     def represent(self, typ, result):
@@ -156,7 +157,7 @@ class Session:
                 result = e
                 typ = "exception"
 
-        self.glb["_"] = result
+        self.blt["_"] = result
 
         await self.send_result(
             result,
@@ -174,7 +175,7 @@ class Session:
             result = e
             typ = "exception"
 
-        self.glb["_"] = result
+        self.blt["_"] = result
 
         await self.direct_send(
             command="echo",
