@@ -24,7 +24,7 @@ def current_evaluator():
     return _current_evaluator.get()
 
 
-class Evaluator:
+class EvaluatorContext:
     def __init__(self, session):
         self.session = session
         self.evalid = next(_c)
@@ -61,25 +61,6 @@ class Session:
         self.sent_resources = set()
         self.loop = asyncio.get_running_loop()
 
-    def newvar(self):
-        """Create a new variable."""
-        return f"_{next(self.varcount)}"
-
-    def getvar(self, obj):
-        """Get the variable name corresponding to the object.
-
-        If the object is not already associated to a variable, one
-        will be created and set in the global scope.
-        """
-        ido = id(obj)
-        if ido in self.idmap:
-            varname = self.idmap[ido]
-        else:
-            varname = self.newvar()
-            self.idmap[ido] = varname
-        self.glb[varname] = obj
-        return varname
-
     async def direct_send(self, **command):
         """Send a command to the client."""
         await self.socket.send(json.dumps(command))
@@ -114,7 +95,29 @@ class Session:
         """
         self.loop.create_task(self.send(**command))
 
-    async def send_result(self, result, *, type, evalid):
+    def newvar(self):
+        """Create a new variable."""
+        return f"_{next(self.varcount)}"
+
+    def getvar(self, obj):
+        """Get the variable name corresponding to the object.
+
+        If the object is not already associated to a variable, one
+        will be created and set in the global scope.
+        """
+        ido = id(obj)
+        if ido in self.idmap:
+            varname = self.idmap[ido]
+        else:
+            varname = self.newvar()
+            self.idmap[ido] = varname
+        self.glb[varname] = obj
+        return varname
+
+    def represent(self, typ, result):
+        if isinstance(result, Tag):
+            return typ, result
+
         try:
             html = hrepr(result)
         except Exception as exc:
@@ -126,7 +129,11 @@ class Session:
                         builtins.type(exc), exc, exc.__traceback__
                     )
                 )
+                typ = "hrepr_exception"
+        return typ, html
 
+    async def send_result(self, result, *, type, evalid):
+        type, html = self.represent(type, result)
         await self.send(
             command="result",
             value=html,
@@ -140,7 +147,7 @@ class Session:
         await meth(**command)
 
     async def run(self, fn):
-        ev = Evaluator(self)
+        ev = EvaluatorContext(self)
         with ev.push_context():
             try:
                 result = fn()
@@ -158,7 +165,7 @@ class Session:
         )
 
     async def command_submit(self, *, expr):
-        ev = Evaluator(self)
+        ev = EvaluatorContext(self)
 
         try:
             result = ev.eval(expr)
@@ -181,7 +188,7 @@ class Session:
         )
 
     async def command_callback(self, *, id, response_id, arguments):
-        ev = Evaluator(self)
+        ev = EvaluatorContext(self)
 
         try:
             cb = callback_registry.resolve(int(id))
