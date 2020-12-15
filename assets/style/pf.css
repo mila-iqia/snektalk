@@ -47,7 +47,30 @@ body {
 
 
 .pf-input-box {
+    display: flex;
+    flex-direction: row;
     padding: 5px;
+}
+
+.pf-input {
+    flex: 1;
+}
+
+.pf-input-mode {
+    margin-right: 5px;
+    margin-top: 1px;
+}
+
+.pf-input-mode-python {
+    color: #bbb;
+    margin-right: 5px;
+    margin-top: 1px;
+}
+
+.pf-input-mode-pdb {
+    color: #fb5;
+    margin-right: 5px;
+    margin-top: 1px;
 }
 
 .pf-nav {

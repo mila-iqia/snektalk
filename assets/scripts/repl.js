@@ -49,6 +49,7 @@ export class Repl {
         this.outerPane = target.querySelector(".pf-outer-pane");
         this.pinpane = target.querySelector(".pf-pin-pane");
         this.inputBox = target.querySelector(".pf-input");
+        this.inputMode = target.querySelector(".pf-input-mode");
         this.statusBar = target.querySelector(".pf-status-bar");
         this.nav = target.querySelector(".pf-nav");
         this._setupEditor(this.inputBox);
@@ -477,6 +478,9 @@ export class Repl {
         }
         else if (data.command == "eval") {
             eval(data.value);
+        }
+        else if (data.command == "set_mode") {
+            this.inputMode.innerHTML = data.html;
         }
         else {
             console.error("Received an unknown command:", data.command);
