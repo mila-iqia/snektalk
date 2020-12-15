@@ -45,7 +45,7 @@ def run(func):
     @app.websocket("/pf")
     async def feed(request, ws):
         sess = Session(glb or {}, ws)
-        Evaluator(sess, glb).push()
+        await sess.push_evaluator(Evaluator(sess, glb))
 
         await sess.run(func)
 

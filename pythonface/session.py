@@ -30,30 +30,10 @@ def new_evalid():
         _current_evalid.reset(token)
 
 
-class EvaluatorContext:
-    def __init__(self, session):
-        self.session = session
-        self.evalid = next(_c)
-
-    def eval(self, expr):
-        try:
-            return eval(expr, self.session.glb)
-        except SyntaxError:
-            exec(expr, self.session.glb)
-            return None
-
-    def queue(self, **command):
-        self.session.queue(**command)
-
-    async def send(self, **command):
-        return await self.session.send(**command)
-
-
 class Evaluator:
-    def __init__(self, session, glb, evalid=None):
+    def __init__(self, session, glb):
         self.session = session
         self.glb = glb
-        self.evalid = evalid
 
     def push(self):
         self.session.loop.create_task(self.session.push_evaluator(self))
@@ -66,6 +46,35 @@ class Evaluator:
 
     async def deactivate(self):
         pass
+
+    def eval(self, expr):
+        try:
+            return eval(expr, self.session.glb)
+        except SyntaxError:
+            exec(expr, self.session.glb)
+            return None
+
+    async def run(self, thing):
+        try:
+            if isinstance(thing, str):
+                result = self.eval(thing)
+                typ = "statement" if result is None else "expression"
+            else:
+                result = thing()
+                typ = "expression"
+        except Exception as e:
+            result = e
+            typ = "exception"
+
+        self.session.blt["_"] = result
+
+        if isinstance(thing, str):
+            await self.session.direct_send(
+                command="echo",
+                value=thing,
+            )
+
+        await self.session.send_result(result, type=typ)
 
 
 class Session:
@@ -184,29 +193,9 @@ class Session:
         await self.send(command="result", value=html, type=type)
 
     async def run(self, thing):
-        ev = EvaluatorContext(self)
         with self.set_context():
             with new_evalid():
-                try:
-                    if isinstance(thing, str):
-                        result = ev.eval(thing)
-                        typ = "statement" if result is None else "expression"
-                    else:
-                        result = thing()
-                        typ = "expression"
-                except Exception as e:
-                    result = e
-                    typ = "exception"
-
-                self.blt["_"] = result
-
-                if isinstance(thing, str):
-                    await self.direct_send(
-                        command="echo",
-                        value=thing,
-                    )
-
-                await self.send_result(result, type=typ)
+                await self.current_evaluator.run(thing)
 
     async def recv(self, **command):
         cmd = command.pop("command", "none")
