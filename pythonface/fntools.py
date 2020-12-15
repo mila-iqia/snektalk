@@ -111,9 +111,9 @@ class Function:
         # Remove the decorators
         fnode.decorator_list.clear()
 
-        glb = dict(self.glb)
-        exec(compile(tree, filename, mode="exec"), glb)
-        new_fn = glb[self.name]
+        lcl = {}
+        exec(compile(tree, filename, mode="exec"), self.glb, lcl)
+        new_fn = lcl[self.name]
         self.fn.__code__ = new_fn.__code__
         self.source[filename] = new_code
         self.source["live"] = new_code
