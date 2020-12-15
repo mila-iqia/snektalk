@@ -35,7 +35,6 @@ body {
     padding: 5px;
     border-right: 3px solid #999;
     overflow: scroll;
-    place-items: center;
 }
 
 .pf-pin-pane > div {
