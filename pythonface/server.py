@@ -5,7 +5,7 @@ import subprocess
 from hrepr import H
 from sanic import Sanic
 
-from .session import Session
+from .session import Session, Evaluator
 
 here = os.path.dirname(__file__)
 assets_path = os.path.join(here, "../assets")
@@ -45,10 +45,7 @@ def run(func):
     @app.websocket("/pf")
     async def feed(request, ws):
         sess = Session(glb or {}, ws)
-        await sess.send(
-            command="set_mode",
-            html=H.span["pf-input-mode-python"](">>>"),
-        )
+        Evaluator(sess, glb).push()
 
         await sess.run(func)
 

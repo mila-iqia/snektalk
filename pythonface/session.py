@@ -13,15 +13,21 @@ from .registry import UNAVAILABLE, callback_registry
 
 _c = count(1)
 
-_current_evaluator = ContextVar("current_evaluator", default=None)
+_current_session = ContextVar("current_session", default=None)
+_current_evalid = ContextVar("current_evalid", default=None)
 
 
 def current_session():
-    return _current_evaluator.get().session
+    return _current_session.get()
 
 
-def current_evaluator():
-    return _current_evaluator.get()
+@contextmanager
+def new_evalid():
+    token = _current_evalid.set(next(_c))
+    try:
+        yield
+    finally:
+        _current_evalid.reset(token)
 
 
 class EvaluatorContext:
@@ -29,27 +35,37 @@ class EvaluatorContext:
         self.session = session
         self.evalid = next(_c)
 
-    @contextmanager
-    def push_context(self):
-        token = _current_evaluator.set(self)
-        try:
-            yield
-        finally:
-            _current_evaluator.reset(token)
-
     def eval(self, expr):
-        with self.push_context():
-            try:
-                return eval(expr, self.session.glb)
-            except SyntaxError:
-                exec(expr, self.session.glb)
-                return None
+        try:
+            return eval(expr, self.session.glb)
+        except SyntaxError:
+            exec(expr, self.session.glb)
+            return None
 
     def queue(self, **command):
-        self.session.queue(**command, evalid=self.evalid)
+        self.session.queue(**command)
 
     async def send(self, **command):
-        return await self.session.send(**command, evalid=self.evalid)
+        return await self.session.send(**command)
+
+
+class Evaluator:
+    def __init__(self, session, glb, evalid=None):
+        self.session = session
+        self.glb = glb
+        self.evalid = evalid
+
+    def push(self):
+        self.session.loop.create_task(self.session.push_evaluator(self))
+
+    async def activate(self):
+        await self.session.send(
+            command="set_mode",
+            html=H.span["pf-input-mode-python"](">>>"),
+        )
+
+    async def deactivate(self):
+        pass
 
 
 class Session:
@@ -60,7 +76,33 @@ class Session:
         self.varcount = count(1)
         self.socket = socket
         self.sent_resources = set()
+        self.evaluators = []
         self.loop = asyncio.get_running_loop()
+
+    @property
+    def current_evaluator(self):
+        return self.evaluators[-1] if self.evaluators else None
+
+    async def push_evaluator(self, ev):
+        if self.current_evaluator:
+            await self.current_evaluator.deactivate()
+        self.evaluators.append(ev)
+        await ev.activate()
+
+    async def pop_evaluator(self):
+        assert self.current_evaluator
+        await self.current_evaluator.deactivate()
+        self.evaluators.pop()
+        assert self.current_evaluator
+        await self.current_evaluator.activate()
+
+    @contextmanager
+    def set_context(self):
+        token = _current_session.set(self)
+        try:
+            yield
+        finally:
+            _current_session.reset(token)
 
     async def direct_send(self, **command):
         """Send a command to the client."""
@@ -86,6 +128,10 @@ class Session:
                     value=str(resource),
                 )
                 self.sent_resources.add(resource)
+
+        evalid = _current_evalid.get()
+        if evalid is not None:
+            command["evalid"] = evalid
 
         await self.direct_send(**command)
 
@@ -133,68 +179,48 @@ class Session:
                 typ = "hrepr_exception"
         return typ, html
 
-    async def send_result(self, result, *, type, evalid):
+    async def send_result(self, result, *, type):
         type, html = self.represent(type, result)
-        await self.send(
-            command="result",
-            value=html,
-            type=type,
-            evalid=evalid,
-        )
+        await self.send(command="result", value=html, type=type)
+
+    async def run(self, thing):
+        ev = EvaluatorContext(self)
+        with self.set_context():
+            with new_evalid():
+                try:
+                    if isinstance(thing, str):
+                        result = ev.eval(thing)
+                        typ = "statement" if result is None else "expression"
+                    else:
+                        result = thing()
+                        typ = "expression"
+                except Exception as e:
+                    result = e
+                    typ = "exception"
+
+                self.blt["_"] = result
+
+                if isinstance(thing, str):
+                    await self.direct_send(
+                        command="echo",
+                        value=thing,
+                    )
+
+                await self.send_result(result, type=typ)
 
     async def recv(self, **command):
         cmd = command.pop("command", "none")
         meth = getattr(self, f"command_{cmd}", None)
         await meth(**command)
 
-    async def run(self, fn):
-        ev = EvaluatorContext(self)
-        with ev.push_context():
-            try:
-                result = fn()
-                typ = "expression"
-            except Exception as e:
-                result = e
-                typ = "exception"
-
-        self.blt["_"] = result
-
-        await self.send_result(
-            result,
-            type=typ,
-            evalid=ev.evalid,
-        )
-
     async def command_submit(self, *, expr):
-        ev = EvaluatorContext(self)
-
-        try:
-            result = ev.eval(expr)
-            typ = "statement" if result is None else "expression"
-        except Exception as e:
-            result = e
-            typ = "exception"
-
-        self.blt["_"] = result
-
-        await self.direct_send(
-            command="echo",
-            value=expr,
-        )
-
-        await self.send_result(
-            result,
-            type=typ,
-            evalid=ev.evalid,
-        )
+        await self.run(expr)
 
     async def command_callback(self, *, id, response_id, arguments):
-        ev = EvaluatorContext(self)
-
         try:
             cb = callback_registry.resolve(int(id))
         except KeyError:
-            ev.queue(
+            self.queue(
                 command="status",
                 type="error",
                 value="value is unavailable; it might have been garbage-collected",
@@ -202,7 +228,7 @@ class Session:
             return
 
         try:
-            with ev.push_context():
+            with self.set_context():
                 if inspect.isawaitable(cb):
                     result = await cb(*arguments)
                 else:

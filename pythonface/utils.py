@@ -4,7 +4,7 @@ from types import FunctionType, MethodType
 from hrepr import H, hjson, hrepr
 
 from .registry import callback_registry
-from .session import current_evaluator, current_session
+from .session import current_session
 
 _count = count()
 
@@ -106,7 +106,7 @@ class AJSCaller(BaseJSCaller):
         async def call(*args):
             code = self._getcode(method_name, args)
             prom = asyncio.Promise()
-            current_evaluator().queue(
+            current_session().queue(
                 command="eval",
                 value=code,
                 promise=prom,
@@ -127,7 +127,7 @@ class JSCaller(BaseJSCaller):
             if self._return_hrepr:
                 return H.javascript(code)
             else:
-                current_evaluator().queue(
+                current_session().queue(
                     command="eval",
                     value=code,
                 )
@@ -143,7 +143,7 @@ class Interactor:
         instance = cls(*args, **kwargs)
         html = hrepr(instance)
         if nav:
-            current_evaluator().queue(
+            current_session().queue(
                 command="set_nav",
                 value=html,
             )

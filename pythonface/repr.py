@@ -5,7 +5,7 @@ from types import FunctionType, MethodType, ModuleType
 from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .fntools import find_fn
-from .session import current_evaluator
+from .session import current_session
 from .utils import join, pf_hjson, represents
 
 ####################
@@ -25,15 +25,15 @@ class PrintSequence(tuple):
 
 def pfprint(*args, **kwargs):
     builtins.print = orig_print
-    ev = current_evaluator()
-    if ev is None:
+    sess = current_session()
+    if sess is None:
         orig_print(*args, **kwargs)
     else:
         if all(isinstance(arg, str) for arg in args):
             html = H.div["pf-print-str"](" ".join(args))
         else:
             html = hrepr(PrintSequence(args), **kwargs)
-        ev.queue(
+        sess.queue(
             command="result",
             value=html,
             type="print",
@@ -132,11 +132,7 @@ class PFHrepr(Hrepr):
         return self.H.div["hrepr-body"](*parts, exc_proper)
 
     def hrepr(self, r: range):
-        rval = self.H.instance(
-            self(r.start),
-            self(r.stop),
-            type="range"
-        )
+        rval = self.H.instance(self(r.start), self(r.stop), type="range")
         if r.step != 1:
             rval = rval(self(r.step))
         return rval
@@ -166,9 +162,7 @@ class PFHrepr(Hrepr):
             if ed is None:
                 return NotImplemented
             return H.instance(
-                self(ed),
-                type=self.hrepr_short(fn),
-                vertical=True
+                self(ed), type=self.hrepr_short(fn), vertical=True
             )
         else:
             return NotImplemented
