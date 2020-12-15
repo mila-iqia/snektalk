@@ -46,6 +46,7 @@ export class Repl {
 
     constructor(target) {
         this.pane = target.querySelector(".pf-pane");
+        this.outerPane = target.querySelector(".pf-outer-pane");
         this.pinpane = target.querySelector(".pf-pin-pane");
         this.inputBox = target.querySelector(".pf-input");
         this.statusBar = target.querySelector(".pf-status-bar");
@@ -256,6 +257,9 @@ export class Repl {
                 this.history[0] = "";
             }
             this.historyCurrent = 0;
+            // The flex-direction on the outer pane is reversed, so
+            // 0 scrolls it to the bottom. Handy.
+            this.outerPane.scrollTop = 0;
         }
 
         editor.commands.addCommand({
