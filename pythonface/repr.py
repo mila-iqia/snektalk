@@ -1,4 +1,5 @@
 import builtins
+import types
 from types import FunctionType, MethodType, ModuleType
 
 from hrepr import H, Hrepr, Tag, hrepr, standard_html
@@ -140,12 +141,35 @@ class PFHrepr(Hrepr):
             rval = rval(self(r.step))
         return rval
 
+    def hrepr(self, fn: types.BuiltinFunctionType):
+        if self.state.depth == 0:
+            return H.instance(
+                H.pre["pf-docstring"](fn.__doc__),
+                type=fn.__name__,
+                vertical=True,
+            )
+        else:
+            return NotImplemented
+
     def hrepr(self, fn: FunctionType):
         if self.state.depth == 0:
             ed = find_fn(fn)
             if ed is None:
                 return NotImplemented
             return self(ed)
+        else:
+            return NotImplemented
+
+    def hrepr(self, fn: MethodType):
+        if self.state.depth == 0:
+            ed = find_fn(fn.__func__)
+            if ed is None:
+                return NotImplemented
+            return H.instance(
+                self(ed),
+                type=self.hrepr_short(fn),
+                vertical=True
+            )
         else:
             return NotImplemented
 

@@ -283,3 +283,12 @@ body {
 .hreprk-property > .hrepr-defn-key {
 	color: #080;
 }
+
+.pf-docstring {
+    max-height: 400px;
+    overflow: scroll;
+}
+
+.hrepr-title .hrepr-defn-key {
+    color: #ddd !important;
+}
