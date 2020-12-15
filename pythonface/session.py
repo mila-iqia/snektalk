@@ -11,7 +11,7 @@ from hrepr import H, Tag, hrepr
 
 from .registry import UNAVAILABLE, callback_registry
 
-_c = count()
+_c = count(1)
 
 _current_evaluator = ContextVar("current_evaluator", default=None)
 

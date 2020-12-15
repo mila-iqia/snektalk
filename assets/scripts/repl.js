@@ -40,6 +40,7 @@ function isElementInViewport(el) {
 
 let allEditors = [];
 let mainRepl = null;
+let evalIdGen = 0;
 
 
 export class Repl {
@@ -429,14 +430,12 @@ export class Repl {
         }
         else if (data.command == "result") {
             let elem = this.reify(data.value);
-            let prbox = null;
-            if (data.evalid !== undefined) {
-                prbox = document.getElementById("pr-eval-" + data.evalid);
-                if (prbox === null) {
-                    prbox = document.createElement("div");
-                    prbox.id = "pr-eval-" + data.evalid;
-                    this.append(prbox, "print");
-                }
+            let evalid = !data.evalid ? `E${++evalIdGen}` : data.evalid
+            let prbox = document.getElementById("pr-eval-" + evalid);
+            if (prbox === null) {
+                prbox = document.createElement("div");
+                prbox.id = "pr-eval-" + evalid;
+                this.append(prbox, "print");
             }
             if (data.type === "statement") { }
             else if (data.type === "print") {
