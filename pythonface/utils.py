@@ -4,7 +4,7 @@ from types import FunctionType, MethodType
 from hrepr import H, hjson, hrepr
 
 from .registry import callback_registry
-from .session import current_evaluator
+from .session import current_evaluator, current_session
 
 _count = count()
 
@@ -43,18 +43,17 @@ def join(elems, sep):
 
 
 def _default_click(obj, evt):
-    ctx = current_evaluator()
+    sess = current_session()
     if evt.get("shiftKey", False):
-        ctx.queue(
+        sess.queue(
             command="result",
             value=hrepr(obj),
             type="print",
         )
     else:
-        varname = ctx.session.getvar(obj)
-        ctx.queue(
+        sess.queue(
             command="pastevar",
-            value=varname,
+            value=sess.getvar(obj),
         )
 
 

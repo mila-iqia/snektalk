@@ -46,9 +46,10 @@ class Evaluator:
                 return None
 
     def queue(self, **command):
-        self.session.loop.create_task(
-            self.session.send(**command, evalid=self.evalid)
-        )
+        self.session.queue(**command, evalid=self.evalid)
+
+    async def send(self, **command):
+        return await self.session.send(**command, evalid=self.evalid)
 
 
 class Session:
@@ -60,7 +61,16 @@ class Session:
         self.sent_resources = set()
         self.loop = asyncio.get_running_loop()
 
+    def newvar(self):
+        """Create a new variable."""
+        return f"_{next(self.varcount)}"
+
     def getvar(self, obj):
+        """Get the variable name corresponding to the object.
+
+        If the object is not already associated to a variable, one
+        will be created and set in the global scope.
+        """
         ido = id(obj)
         if ido in self.idmap:
             varname = self.idmap[ido]
@@ -70,13 +80,17 @@ class Session:
         self.glb[varname] = obj
         return varname
 
-    def newvar(self):
-        return f"_{next(self.varcount)}"
-
     async def direct_send(self, **command):
+        """Send a command to the client."""
         await self.socket.send(json.dumps(command))
 
     async def send(self, **command):
+        """Send a command to the client, plus any resources.
+
+        Any field that is a Tag and contains resources will send
+        resource commands to the client to load these resources.
+        A resource is only sent once, the first time it is needed.
+        """
         resources = []
         for k, v in command.items():
             if isinstance(v, Tag):
@@ -85,17 +99,20 @@ class Session:
 
         for resource in resources:
             if resource not in self.sent_resources:
-                await self.socket.send(
-                    json.dumps(
-                        {
-                            "command": "resource",
-                            "value": str(resource),
-                        }
-                    )
+                await self.direct_send(
+                    command="resource",
+                    value=str(resource),
                 )
                 self.sent_resources.add(resource)
 
-        await self.socket.send(json.dumps(command))
+        await self.direct_send(**command)
+
+    def queue(self, **command):
+        """Queue a command to the client, plus any resources.
+
+        This queues the command using the session's asyncio loop.
+        """
+        self.loop.create_task(self.send(**command))
 
     async def send_result(self, result, *, type, evalid):
         try:
