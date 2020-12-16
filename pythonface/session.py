@@ -36,7 +36,10 @@ class Evaluator:
         self.glb = glb
 
     def push(self):
-        self.session.loop.create_task(self.session.push_evaluator(self))
+        self.session.schedule(self.session.push_evaluator(self))
+
+    def pop(self):
+        self.session.schedule(self.session.pop_evaluator())
 
     async def activate(self):
         await self.session.send(
@@ -54,7 +57,15 @@ class Evaluator:
             exec(expr, self.session.glb)
             return None
 
-    async def run(self, thing):
+    def run(self, thing):
+        if isinstance(thing, str):
+            self.session.schedule(
+                self.session.direct_send(
+                    command="echo",
+                    value=thing,
+                )
+            )
+
         try:
             if isinstance(thing, str):
                 result = self.eval(thing)
@@ -68,13 +79,9 @@ class Evaluator:
 
         self.session.blt["_"] = result
 
-        if isinstance(thing, str):
-            await self.session.direct_send(
-                command="echo",
-                value=thing,
-            )
-
-        await self.session.send_result(result, type=typ)
+        self.session.schedule(
+            self.session.send_result(result, type=typ)
+        )
 
 
 class Session:
@@ -144,12 +151,15 @@ class Session:
 
         await self.direct_send(**command)
 
+    def schedule(self, fn):
+        self.loop.create_task(fn)
+
     def queue(self, **command):
         """Queue a command to the client, plus any resources.
 
         This queues the command using the session's asyncio loop.
         """
-        self.loop.create_task(self.send(**command))
+        self.schedule(self.send(**command))
 
     def newvar(self):
         """Create a new variable."""
@@ -192,10 +202,10 @@ class Session:
         type, html = self.represent(type, result)
         await self.send(command="result", value=html, type=type)
 
-    async def run(self, thing):
+    def run(self, thing):
         with self.set_context():
             with new_evalid():
-                await self.current_evaluator.run(thing)
+                self.current_evaluator.run(thing)
 
     async def recv(self, **command):
         cmd = command.pop("command", "none")
@@ -203,7 +213,7 @@ class Session:
         await meth(**command)
 
     async def command_submit(self, *, expr):
-        await self.run(expr)
+        self.run(expr)
 
     async def command_callback(self, *, id, response_id, arguments):
         try:
