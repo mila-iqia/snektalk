@@ -2,7 +2,9 @@ import asyncio
 import builtins
 import inspect
 import json
+import threading
 import traceback
+from collections import deque
 from contextlib import contextmanager
 from contextvars import ContextVar
 from itertools import count
@@ -31,24 +33,9 @@ def new_evalid():
 
 
 class Evaluator:
-    def __init__(self, session, glb):
+    def __init__(self, session):
         self.session = session
-        self.glb = glb
-
-    def push(self):
-        self.session.push_evaluator(self)
-
-    def pop(self):
-        self.session.pop_evaluator()
-
-    def activate(self):
-        self.session.queue(
-            command="set_mode",
-            html=H.span["pf-input-mode-python"](">>>"),
-        )
-
-    def deactivate(self):
-        pass
+        self.glb = session.glb
 
     def eval(self, expr):
         try:
@@ -79,38 +66,36 @@ class Evaluator:
 
         self.session.blt["_"] = result
 
-        self.session.schedule(
-            self.session.send_result(result, type=typ)
+        self.session.schedule(self.session.send_result(result, type=typ))
+
+    def loop(self):
+        self.session.queue(
+            command="set_mode",
+            html=H.span["pf-input-mode-python"](">>>"),
         )
+        while True:
+            with self.session.proceed() as cmd:
+                self.run(cmd["expr"])
 
 
 class Session:
-    def __init__(self, glb, socket):
+    def __init__(self, glb, socket, evaluator_class):
         self.glb = glb
         self.blt = vars(builtins)
         self.idmap = {}
         self.varcount = count(1)
         self.socket = socket
         self.sent_resources = set()
-        self.evaluators = []
+        self.command_queue = deque()
+        self.semaphore = threading.Semaphore(value=0)
         self.loop = asyncio.get_running_loop()
+        self.evaluator = evaluator_class(self)
+        self.thread = threading.Thread(target=self.evaluator.loop, daemon=True)
+        self.thread.start()
 
-    @property
-    def current_evaluator(self):
-        return self.evaluators[-1] if self.evaluators else None
-
-    def push_evaluator(self, ev):
-        if self.current_evaluator:
-            self.current_evaluator.deactivate()
-        self.evaluators.append(ev)
-        ev.activate()
-
-    def pop_evaluator(self):
-        assert self.current_evaluator
-        self.current_evaluator.deactivate()
-        self.evaluators.pop()
-        assert self.current_evaluator
-        self.current_evaluator.activate()
+    #############
+    # Utilities #
+    #############
 
     @contextmanager
     def set_context(self):
@@ -119,47 +104,6 @@ class Session:
             yield
         finally:
             _current_session.reset(token)
-
-    async def direct_send(self, **command):
-        """Send a command to the client."""
-        await self.socket.send(json.dumps(command))
-
-    async def send(self, **command):
-        """Send a command to the client, plus any resources.
-
-        Any field that is a Tag and contains resources will send
-        resource commands to the client to load these resources.
-        A resource is only sent once, the first time it is needed.
-        """
-        resources = []
-        for k, v in command.items():
-            if isinstance(v, Tag):
-                resources.extend(v.collect_resources())
-                command[k] = str(v)
-
-        for resource in resources:
-            if resource not in self.sent_resources:
-                await self.direct_send(
-                    command="resource",
-                    value=str(resource),
-                )
-                self.sent_resources.add(resource)
-
-        evalid = _current_evalid.get()
-        if evalid is not None:
-            command["evalid"] = evalid
-
-        await self.direct_send(**command)
-
-    def schedule(self, fn):
-        self.loop.create_task(fn)
-
-    def queue(self, **command):
-        """Queue a command to the client, plus any resources.
-
-        This queues the command using the session's asyncio loop.
-        """
-        self.schedule(self.send(**command))
 
     def newvar(self):
         """Create a new variable."""
@@ -198,14 +142,82 @@ class Session:
                 typ = "hrepr_exception"
         return typ, html
 
-    async def send_result(self, result, *, type):
-        type, html = self.represent(type, result)
-        await self.send(command="result", value=html, type=type)
+    ################
+    # Proceed/next #
+    ################
+
+    @contextmanager
+    def proceed(self):
+        expr = self.next()
+        with self.set_context():
+            with new_evalid():
+                yield expr
+
+    def next(self):
+        self.semaphore.acquire()
+        return self.command_queue.popleft()
+
+    ###############
+    # Initial run #
+    ###############
 
     def run(self, thing):
         with self.set_context():
             with new_evalid():
-                self.current_evaluator.run(thing)
+                self.evaluator.run(thing)
+
+    ###########
+    # Sending #
+    ###########
+
+    async def direct_send(self, **command):
+        """Send a command to the client."""
+        await self.socket.send(json.dumps(command))
+
+    async def send(self, **command):
+        """Send a command to the client, plus any resources.
+
+        Any field that is a Tag and contains resources will send
+        resource commands to the client to load these resources.
+        A resource is only sent once, the first time it is needed.
+        """
+        resources = []
+        for k, v in command.items():
+            if isinstance(v, Tag):
+                resources.extend(v.collect_resources())
+                command[k] = str(v)
+
+        for resource in resources:
+            if resource not in self.sent_resources:
+                await self.direct_send(
+                    command="resource",
+                    value=str(resource),
+                )
+                self.sent_resources.add(resource)
+
+        evalid = _current_evalid.get()
+        if evalid is not None:
+            command["evalid"] = evalid
+
+        await self.direct_send(**command)
+
+    async def send_result(self, result, *, type):
+        type, html = self.represent(type, result)
+        await self.send(command="result", value=html, type=type)
+
+    def schedule(self, fn):
+        self.loop.call_soon_threadsafe(lambda: self.loop.create_task(fn))
+
+    def queue(self, **command):
+        """Queue a command to the client, plus any resources.
+
+        This queues the command using the session's asyncio loop.
+        """
+        self.schedule(self.send(**command))
+
+    ############
+    # Commands #
+    ############
 
     async def recv(self, **command):
         cmd = command.pop("command", "none")
@@ -213,7 +225,8 @@ class Session:
         await meth(**command)
 
     async def command_submit(self, *, expr):
-        self.run(expr)
+        self.command_queue.append({"expr": expr})
+        self.semaphore.release()
 
     async def command_callback(self, *, id, response_id, arguments):
         try:

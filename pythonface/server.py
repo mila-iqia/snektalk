@@ -5,7 +5,7 @@ import subprocess
 from hrepr import H
 from sanic import Sanic
 
-from .session import Session, Evaluator
+from .session import Evaluator, Session
 
 here = os.path.dirname(__file__)
 assets_path = os.path.join(here, "../assets")
@@ -44,8 +44,7 @@ def run(func):
 
     @app.websocket("/pf")
     async def feed(request, ws):
-        sess = Session(glb or {}, ws)
-        sess.push_evaluator(Evaluator(sess, glb))
+        sess = Session(glb or {}, ws, Evaluator)
 
         sess.run(func)
 
