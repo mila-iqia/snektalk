@@ -36,18 +36,18 @@ class Evaluator:
         self.glb = glb
 
     def push(self):
-        self.session.schedule(self.session.push_evaluator(self))
+        self.session.push_evaluator(self)
 
     def pop(self):
-        self.session.schedule(self.session.pop_evaluator())
+        self.session.pop_evaluator()
 
-    async def activate(self):
-        await self.session.send(
+    def activate(self):
+        self.session.queue(
             command="set_mode",
             html=H.span["pf-input-mode-python"](">>>"),
         )
 
-    async def deactivate(self):
+    def deactivate(self):
         pass
 
     def eval(self, expr):
@@ -99,18 +99,18 @@ class Session:
     def current_evaluator(self):
         return self.evaluators[-1] if self.evaluators else None
 
-    async def push_evaluator(self, ev):
+    def push_evaluator(self, ev):
         if self.current_evaluator:
-            await self.current_evaluator.deactivate()
+            self.current_evaluator.deactivate()
         self.evaluators.append(ev)
-        await ev.activate()
+        ev.activate()
 
-    async def pop_evaluator(self):
+    def pop_evaluator(self):
         assert self.current_evaluator
-        await self.current_evaluator.deactivate()
+        self.current_evaluator.deactivate()
         self.evaluators.pop()
         assert self.current_evaluator
-        await self.current_evaluator.activate()
+        self.current_evaluator.activate()
 
     @contextmanager
     def set_context(self):

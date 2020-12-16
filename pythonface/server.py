@@ -45,9 +45,9 @@ def run(func):
     @app.websocket("/pf")
     async def feed(request, ws):
         sess = Session(glb or {}, ws)
-        await sess.push_evaluator(Evaluator(sess, glb))
+        sess.push_evaluator(Evaluator(sess, glb))
 
-        await sess.run(func)
+        sess.run(func)
 
         while True:
             command = json.loads(await ws.recv())
