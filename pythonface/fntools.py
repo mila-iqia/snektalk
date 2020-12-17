@@ -98,6 +98,9 @@ class Function:
             "live": norm_src,
         }
 
+    def relative_lineno(self, lineno):
+        return lineno - self.fn.__code__.co_firstlineno
+
     def recode(self, new_code):
         new_code = textwrap.dedent(new_code)
         if not new_code.startswith(self.locked):

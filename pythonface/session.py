@@ -37,14 +37,16 @@ class Evaluator:
         self.session = session
         self.glb = session.glb
 
-    def eval(self, expr):
+    def eval(self, expr, glb=None, lcl=None):
+        if glb is None:
+            glb = self.session.glb
         try:
-            return eval(expr, self.session.glb)
+            return eval(expr, glb, lcl)
         except SyntaxError:
-            exec(expr, self.session.glb)
+            exec(expr, glb, lcl)
             return None
 
-    def run(self, thing):
+    def run(self, thing, glb=None, lcl=None):
         if isinstance(thing, str):
             self.session.schedule(
                 self.session.direct_send(
@@ -55,7 +57,7 @@ class Evaluator:
 
         try:
             if isinstance(thing, str):
-                result = self.eval(thing)
+                result = self.eval(thing, glb, lcl)
                 typ = "statement" if result is None else "expression"
             else:
                 result = thing()
@@ -69,13 +71,12 @@ class Evaluator:
         self.session.schedule(self.session.send_result(result, type=typ))
 
     def loop(self):
-        self.session.queue(
-            command="set_mode",
-            html=H.span["pf-input-mode-python"](">>>"),
-        )
         while True:
-            with self.session.proceed() as cmd:
-                self.run(cmd["expr"])
+            prompt = H.span["pf-input-mode-python"](">>>")
+            with self.session.prompt(prompt) as cmd:
+                expr = cmd["expr"]
+                if not isinstance(expr, str) or expr.strip():
+                    self.run(expr)
 
 
 class Session:
@@ -86,6 +87,8 @@ class Session:
         self.varcount = count(1)
         self.socket = socket
         self.sent_resources = set()
+        self.last_prompt = ""
+        self.last_nav = ""
         self.command_queue = deque()
         self.semaphore = threading.Semaphore(value=0)
         self.loop = asyncio.get_running_loop()
@@ -146,8 +149,25 @@ class Session:
     # Proceed/next #
     ################
 
+    def set_prompt(self, prompt):
+        if prompt != self.last_prompt:
+            self.queue(
+                command="set_mode",
+                html=prompt,
+            )
+
+    def set_nav(self, nav):
+        if nav != self.last_nav:
+            self.queue(
+                command="set_nav",
+                value=hrepr(nav),
+            )
+            self.last_nav = nav
+
     @contextmanager
-    def proceed(self):
+    def prompt(self, prompt="", nav=H.span()):
+        self.set_prompt(prompt)
+        self.set_nav(nav)
         expr = self.next()
         with self.set_context():
             with new_evalid():

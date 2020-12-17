@@ -269,9 +269,6 @@ export class Repl {
             bindKey: "Enter",
             exec: editor => {
                 let value = editor.getValue();
-                if (value.trim() === "") {
-                    return;
-                }
                 let lines = value.split("\n");
                 if (lines.length == 1 && !lines[0].match(/[\(\[\{:]$/)) {
                     _submit();
