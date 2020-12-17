@@ -4,7 +4,7 @@ from types import FunctionType, MethodType, ModuleType
 
 from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
-from .fntools import find_fn
+from .fntools import Function, find_fn
 from .session import current_session
 from .utils import join, pf_hjson, represents
 
@@ -289,6 +289,30 @@ class PFHrepr(Hrepr):
             )
         else:
             return NotImplemented
+
+    def hrepr_resources(self, fn: Function):
+        return self.H.javascript(
+            export="BackedEditor",
+            src="scripts/edit.js",
+        )
+
+    def hrepr(self, fn: Function):
+        html = self.H.div["pf-bedit"](
+            constructor="BackedEditor",
+            options={
+                "funcId": fn.id,
+                "content": {
+                    "live": fn.source["live"],
+                    "saved": fn.source["saved"],
+                },
+                "filename": fn.filename,
+                "save": fn.recode,
+                "commit": fn.replace,
+                "highlight": self.config.code_highlight,
+                "protectedPrefix": fn.nlocked,
+            },
+        )
+        return represents(fn.fn, html)
 
 
 #####################################

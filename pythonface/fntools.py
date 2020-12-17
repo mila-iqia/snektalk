@@ -9,8 +9,6 @@ from types import CodeType, FunctionType
 
 from ovld import ovld
 
-from .utils import represents
-
 _c = count()
 filename_to_module = {}
 codefiles = {}
@@ -81,8 +79,18 @@ def _get_indent(src):
         return 0
 
 
+def declare_virtual_codefile(filename, functions):
+    codefile = CodeFile(
+        module=None,
+        filename=filename,
+        functions=functions,
+    )
+    codefiles[filename] = codefile
+    return codefile
+
+
 class Function:
-    def __init__(self, codefile, fn):
+    def __init__(self, codefile, fn, source=None):
         self.id = next(_c)
         self.codefile = codefile
         self.fn = fn
@@ -90,16 +98,14 @@ class Function:
         self.orig_code = fn.__code__
         self.glb = fn.__globals__
         self.filename = codefile.filename
-        src = inspect.getsource(fn)
+        self.firstlineno = self.fn.__code__.co_firstlineno
+        src = source or inspect.getsource(fn)
         self.nlocked, self.locked, self.indent, norm_src = _analyze_source(src)
         self.source = {
             "real_saved": src,
             "saved": norm_src,
             "live": norm_src,
         }
-
-    def relative_lineno(self, lineno):
-        return lineno - self.fn.__code__.co_firstlineno
 
     def recode(self, new_code):
         new_code = textwrap.dedent(new_code)
@@ -120,8 +126,7 @@ class Function:
         self.fn.__code__ = new_fn.__code__
         self.source[filename] = new_code
         self.source["live"] = new_code
-        codefiles[filename] = CodeFile(
-            module=None,
+        declare_virtual_codefile(
             filename=filename,
             functions={(self.name, new_fn.__code__.co_firstlineno): self},
         )
@@ -153,34 +158,6 @@ class Function:
         self.source["saved"] = new_code
         self.source["real_saved"] = indented_code
         return True
-
-    @classmethod
-    def __hrepr_resources__(cls, H):
-        return H.javascript(
-            export="BackedEditor",
-            src="scripts/edit.js",
-        )
-
-    def __hrepr__(self, H, hrepr):
-        src_live = textwrap.dedent(self.source["live"]).strip()
-        src_saved = textwrap.dedent(self.source["saved"]).strip()
-
-        html = H.div["pf-bedit"](
-            constructor="BackedEditor",
-            options={
-                "funcId": self.id,
-                "content": {
-                    "live": src_live,
-                    "saved": src_saved,
-                },
-                "filename": self.filename,
-                "save": self.recode,
-                "commit": self.replace,
-                "highlight": hrepr.config.code_highlight,
-                "protectedPrefix": self.nlocked,
-            },
-        )
-        return represents(self.fn, html)
 
 
 @ovld

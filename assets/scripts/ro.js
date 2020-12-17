@@ -32,8 +32,12 @@ define(["ace", "repl"], (ace, repl) => {
             });
             editor.setTheme("ace/theme/xcode");
             editor.session.setMode("ace/mode/python");
-
-            this.update(options.content, options.filename, options.highlight);
+            this.update(
+                options.content,
+                options.filename,
+                options.firstlineno,
+                options.highlight
+            );
         }
 
         unmark() {
@@ -43,8 +47,11 @@ define(["ace", "repl"], (ace, repl) => {
             }
         }
 
-        update(new_content, filename, highlight) {
+        update(new_content, filename, firstlineno, highlight) {
             this.unmark();
+            this.filename = filename;
+            this.firstlineno = firstlineno;
+            highlight -= firstlineno;
             this.editor.session.removeMarker(this.mark);
             this.editor.setValue(new_content, -1);
             this.status.innerText = filename;

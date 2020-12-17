@@ -23,7 +23,8 @@ class PFDb(bdb.Bdb):
         self.nav = ReadOnly({
             "filename": "",
             "content": "",
-            "highlight": 1
+            "firstlineno": 1,
+            "highlight": 1,
         })
         self.session.set_nav(self.nav)
         self.last_method = (lambda *_: None), None
@@ -45,7 +46,8 @@ class PFDb(bdb.Bdb):
             self.nav.js.update(
                 fn.source["live"],
                 fn.filename,
-                fn.relative_lineno(frame.f_lineno)
+                fn.firstlineno,
+                frame.f_lineno,
             )
 
     def get_frame(self):
