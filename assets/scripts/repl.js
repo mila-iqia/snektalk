@@ -376,7 +376,7 @@ export class Repl {
     }
     
     send(message) {
-        // Send a message to PythonFace
+        // Send a message back to SnekTalk
         if (this.closed) {
             this.setStatus({
                 type: "error",

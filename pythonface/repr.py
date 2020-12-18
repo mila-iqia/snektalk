@@ -8,9 +8,9 @@ from .fntools import Function, find_fn
 from .session import current_session
 from .utils import join, pf_hjson, represents
 
-####################
-# PythonFace print #
-####################
+##################
+# SnekTalk print #
+##################
 
 
 orig_print = print
@@ -23,7 +23,7 @@ class PrintSequence(tuple):
         )
 
 
-def pfprint(*args, **kwargs):
+def snekprint(*args, **kwargs):
     builtins.print = orig_print
     sess = current_session()
     if sess is None:
@@ -38,7 +38,7 @@ def pfprint(*args, **kwargs):
             value=html,
             type="print",
         )
-    builtins.print = pfprint
+    builtins.print = snekprint
 
 
 class HDir:
@@ -321,7 +321,7 @@ class PFHrepr(Hrepr):
 
 
 def inject():
-    builtins.print = pfprint
+    builtins.print = snekprint
     builtins.hdir = hdir
     hrepr.configure(
         mixins=PFHrepr,

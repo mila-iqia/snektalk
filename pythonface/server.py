@@ -12,7 +12,7 @@ assets_path = os.path.join(here, "../assets")
 
 
 def define(glb=None):
-    app = Sanic("pythonface")
+    app = Sanic("snektalk")
     app.static("/", f"{assets_path}/index.html")
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
@@ -37,7 +37,7 @@ def serve(glb=None):
 def run(func):
     glb = func.__globals__
 
-    app = Sanic("pythonface")
+    app = Sanic("snektalk")
     app.static("/", f"{assets_path}/index.html")
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
