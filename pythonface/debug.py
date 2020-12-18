@@ -12,7 +12,7 @@ from .fntools import find_fn
 _here = os.path.dirname(__file__)
 
 
-class PFDb(bdb.Bdb):
+class SnekTalkDb(bdb.Bdb):
     # Note: Many methods have been lifted from pdb.py in the standard lib
     # and slightly adapted
 

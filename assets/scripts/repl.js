@@ -58,7 +58,7 @@ export class Repl {
         this.history = [""];
         target.onclick = this.$globalClickEvent.bind(this);
         window.onkeydown = this.$globalKDEvent.bind(this);
-        window.$$PFCB = this.pfcb.bind(this);
+        window.$$SKTK = this.sktk.bind(this);
         this.$currid = 0;
         this.$responseMap = {};
         exports.mainRepl = this;
@@ -130,14 +130,14 @@ export class Repl {
                 break;
             }
             else if (!evt.metaKey && target.getAttribute("objid") !== null) {
-                this.pfcb(parseInt(target.getAttribute("objid")));
+                this.sktk(parseInt(target.getAttribute("objid")));
                 break;
             }
             target = target.parentElement;
         }
     }
 
-    pfcb(id, ...args) {
+    sktk(id, ...args) {
         // Call a Python function by id
         const exec = async (...args) => {
             let response_id = this.$currid++;
@@ -185,7 +185,7 @@ export class Repl {
         }
         else {
             // The call is in an event handler like onclick, for example
-            // <div onclick="$$PFCB(15)">...</div>, so we execute it
+            // <div onclick="$$SKTK(15)">...</div>, so we execute it
             // immediately.
             evt.preventDefault();
             evt.stopPropagation();
@@ -484,7 +484,7 @@ export class Repl {
     }
 
     connect() {
-        let socket = new WebSocket('ws://localhost:6499/pf?session=main');
+        let socket = new WebSocket('ws://localhost:6499/sktk?session=main');
 
         socket.addEventListener('message', event => {
             let data = JSON.parse(event.data);

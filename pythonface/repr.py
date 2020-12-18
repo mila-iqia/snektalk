@@ -6,7 +6,7 @@ from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .fntools import Function, find_fn
 from .session import current_session
-from .utils import join, pf_hjson, represents
+from .utils import join, sktk_hjson, represents
 
 ##################
 # SnekTalk print #
@@ -84,7 +84,7 @@ def shortname(obj):
     return getattr(obj, "__name__", f"<{type(obj).__name__}>")
 
 
-class PFHrepr(Hrepr):
+class SnekTalkHrepr(Hrepr):
     def collapsible(self, title, body, start_visible=False):
         body = self.H.div(self(body))
         if not start_visible:
@@ -324,11 +324,11 @@ def inject():
     builtins.print = snekprint
     builtins.hdir = hdir
     hrepr.configure(
-        mixins=PFHrepr,
+        mixins=SnekTalkHrepr,
         postprocess=wrap_onclick,
         backend=standard_html.copy(
             initial_state={
-                "hjson": pf_hjson,
+                "hjson": sktk_hjson,
                 "requirejs_resources": [],
             }
         ),

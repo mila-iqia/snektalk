@@ -15,13 +15,13 @@ _count = count()
 
 
 @hjson.dump.variant
-def _pf_hjson(self, fn: (MethodType, FunctionType)):
+def _sktk_hjson(self, fn: (MethodType, FunctionType)):
     method_id = callback_registry.register(fn)
-    return f"$$PFCB({method_id})"
+    return f"$$SKTK({method_id})"
 
 
-def pf_hjson(obj):
-    return str(_pf_hjson(obj))
+def sktk_hjson(obj):
+    return str(_sktk_hjson(obj))
 
 
 #############
@@ -87,7 +87,7 @@ class BaseJSCaller:
     def _getcode(self, method_name, args):
         if not self._interactor:
             raise Exception("The JavaScript interface is not active.")
-        argtext = ",".join(map(pf_hjson, args))
+        argtext = ",".join(map(sktk_hjson, args))
         return f"""
         require(
             ['{self._jsid}'],
@@ -176,7 +176,7 @@ class Interactor:
         return [rval(export=cls.js_constructor)]
 
     def __hrepr__(self, H, hrepr):
-        params = pf_hjson(self.parameters)
+        params = sktk_hjson(self.parameters)
         self.active = True
         tmpid = f"$$tmp{next(_count)}"
         return H.div(

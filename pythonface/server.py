@@ -17,7 +17,7 @@ def define(glb=None):
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
 
-    @app.websocket("/pf")
+    @app.websocket("/sktk")
     async def feed(request, ws):
         sess = Session(glb or {}, ws)
 
@@ -42,7 +42,7 @@ def run(func):
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
 
-    @app.websocket("/pf")
+    @app.websocket("/sktk")
     async def feed(request, ws):
         sess = Session(glb or {}, ws, Evaluator)
         sess.schedule(sess.command_submit(expr=func))
