@@ -40,7 +40,7 @@ class Evaluator:
 
     def loop(self):
         while True:
-            prompt = H.span["pf-input-mode-python"](">>>")
+            prompt = H.span["snek-input-mode-python"](">>>")
             with self.session.prompt(prompt) as cmd:
                 expr = cmd["expr"]
                 if not isinstance(expr, str) or expr.strip():

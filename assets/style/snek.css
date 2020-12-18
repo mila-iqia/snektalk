@@ -14,7 +14,7 @@ body {
     height: 100%;
 }
 
-.pf-interactor {
+.snek-interactor {
     width: 800px;
     display: flex;
     flex-direction: column;
@@ -22,7 +22,7 @@ body {
     margin: auto;
 }
 
-.pf-outer-pane {
+.snek-outer-pane {
     flex-grow: 1;
     padding: 5px;
     border-bottom: 3px solid #999;
@@ -33,7 +33,7 @@ body {
     flex-direction: column-reverse;
 }
 
-.pf-pin-pane {
+.snek-pin-pane {
     display: flex;
     flex-direction: column;
     padding: 5px;
@@ -41,172 +41,172 @@ body {
     overflow: scroll;
 }
 
-.pf-pin-pane > div {
+.snek-pin-pane > div {
     padding: 5px;
 }
 
-.pf-pin-pane:empty {
+.snek-pin-pane:empty {
     display: none;
 }
 
 
-.pf-input-box {
+.snek-input-box {
     display: flex;
     flex-direction: row;
     padding: 5px;
 }
 
-.pf-input {
+.snek-input {
     flex: 1;
 }
 
-.pf-input-mode {
+.snek-input-mode {
     margin-right: 5px;
     margin-top: 1px;
 }
 
-.pf-input-mode-python {
+.snek-input-mode-python {
     color: #bbb;
     margin-right: 5px;
     margin-top: 1px;
 }
 
-.pf-input-mode-debug {
+.snek-input-mode-debug {
     color: #f84;
     margin-right: 5px;
     margin-top: 1px;
 }
 
-.pf-nav {
+.snek-nav {
     width: 100%;
 }
 
-.pf-status-bar {
+.snek-status-bar {
     height: 1.5em;
     min-height: 1.5em;
     text-align: right;
     color: #888;
 }
 
-.pf-status-normal {
+.snek-status-normal {
     transition: color 2s ease;
     color: #888;
 }
 
-.pf-status-error {
+.snek-status-error {
     color: red;
 }
 
-.pf-status-flash-error {
+.snek-status-flash-error {
     background: #fbb;
 }
 
-.pf-line {
+.snek-line {
     display: flex;
     flex-direction: row;
     margin-top: 5px;
     margin-bottom: 5px;
 }
 
-.pf-result {
+.snek-result {
     flex-grow: 1;
 }
 
-.pf-gutter {
+.snek-gutter {
     min-height: 1em;
 }
 
 
-.pf-line.pf-t-echo .ace_content {
+.snek-line.snek-t-echo .ace_content {
     background: #f8f8f8;
 }
 
-.pf-line.pf-t-echo {
+.snek-line.snek-t-echo {
     background: #f8f8f8;
     padding-top: 5px;
     padding-bottom: 5px;
 }
 
-.pf-gutter.pf-t-echo {
+.snek-gutter.snek-t-echo {
     /* background: white; */
     width: 20px;
     border-right: 5px solid transparent;
     margin-right: 10px;
 }
 
-.pf-gutter.pf-t-expression {
+.snek-gutter.snek-t-expression {
     /* background: #dcdcdc; */
     border-right: 5px solid #88f;
     width: 20px;
     margin-right: 10px;
 }
 
-.pf-gutter.pf-t-exception {
+.snek-gutter.snek-t-exception {
     /* background: #dcdcdc; */
     border-right: 5px solid red;
     width: 20px;
     margin-right: 10px;
 }
 
-.pf-gutter.pf-t-print {
+.snek-gutter.snek-t-print {
     border-right: 5px solid transparent;
     width: 20px;
     margin-right: 10px;
     min-height: 0;
 }
 
-.pf-line.pf-t-print {
+.snek-line.snek-t-print {
     margin: 0px;
     padding: 0px;
 }
 
-.pf-print-sequence {
+.snek-print-sequence {
     display: flex;
     flex-direction: row;
     place-items: center;
 }
 
-.pf-print-sequence > * {
+.snek-print-sequence > * {
     padding-left: 5px;
     padding-right: 5px;
 }
 
-.pf-pinbutton:hover {
+.snek-pinbutton:hover {
     cursor: pointer;
 }
 
-.pf-block-type {
+.snek-block-type {
     margin-left: 5px;
     color: #fa0;
 }
 
-.pf-clsname {
+.snek-clsname {
     color: #aaa;
     text-align: right;
 }
 
-.pf-clsname-principal {
+.snek-clsname-principal {
     color: #777;
     text-align: right;
 }
 
-.pf-collapsible {
+.snek-collapsible {
     display: flex;
     flex-direction: column;
     justify-items: stretch;
 }
 
-.pf-collapsible-title {
+.snek-collapsible-title {
     cursor: pointer;
 }
 
-.pf-title-row {
+.snek-title-row {
     background-color: #ddd;
     display: flex;
     flex-direction: row;
 }
 
-.pf-title-row > *:first-child {
+.snek-title-row > *:first-child {
     flex-grow: 1;
 }
 
@@ -221,14 +221,14 @@ body {
     padding-left: 5px;
 }
 
-.pf-bedit-hl {
+.snek-bedit-hl {
     position: absolute;
     background: #fa5;
 }
 
 /* TODO: style the protected range when it is properly read-only */
 /*
-.pf-bedit-protected {
+.snek-bedit-protected {
     position: absolute;
     background: repeating-linear-gradient(
         45deg,
@@ -239,68 +239,68 @@ body {
       );
 } */
 
-.pf-pin-pane .pf-bedit {
+.snek-pin-pane .snek-bedit {
     width: 600px;
 }
 
-.pf-bedit {
+.snek-bedit {
     width: 100%;
     border: 5px solid black;
     border-bottom: 2px solid;
     box-sizing: border-box;
 }
 
-.pf-bedit-editor {
+.snek-bedit-editor {
     background: white;
     border: 5px solid white;
 }
 
-.pf-bedit-editor.ace_focus {
+.snek-bedit-editor.ace_focus {
     background: beige;
     border: 5px solid beige;
 }
 
-.pf-bedit-saved { border-color: green; }
-.pf-bedit-live { border-color: #8a0; }
-.pf-bedit-dirty { border-color: #f60; }
-.pf-bedit-error { border-color: red; }
+.snek-bedit-saved { border-color: green; }
+.snek-bedit-live { border-color: #8a0; }
+.snek-bedit-dirty { border-color: #f60; }
+.snek-bedit-error { border-color: red; }
 
-.pf-bedit-saved .pf-bedit-status { background-color: green; }
-.pf-bedit-live .pf-bedit-status { background-color: #8a0; }
-.pf-bedit-dirty .pf-bedit-status { background-color: #f60; }
-.pf-bedit-error .pf-bedit-status { background-color: red; }
+.snek-bedit-saved .snek-bedit-status { background-color: green; }
+.snek-bedit-live .snek-bedit-status { background-color: #8a0; }
+.snek-bedit-dirty .snek-bedit-status { background-color: #f60; }
+.snek-bedit-error .snek-bedit-status { background-color: red; }
 
-.pf-bedit-status {
+.snek-bedit-status {
     display: flex;
     flex-direction: row;
     color: white;
     font-size: 10px;
 }
 
-.pf-bedit-filename {
+.snek-bedit-filename {
     flex: 1;
 }
 
-.pf-bedit-state {
+.snek-bedit-state {
     margin-left: 20px;
 }
 
-.pf-hidden {
+.snek-hidden {
     display: none;
 }
 
-.pf-print-str {
+.snek-print-str {
     white-space: pre-wrap;
 }
 
-.pf-bedit-readonly {
+.snek-bedit-readonly {
     min-width: 500px;
     width: 100%;
     border: 1px solid #888;
     box-sizing: border-box;
 }
 
-.pf-bedit-readonly > .pf-bedit-status {
+.snek-bedit-readonly > .snek-bedit-status {
     color: #888;
 }
 
@@ -310,7 +310,7 @@ body {
 	color: #080;
 }
 
-.pf-docstring {
+.snek-docstring {
     max-height: 400px;
     overflow: scroll;
 }

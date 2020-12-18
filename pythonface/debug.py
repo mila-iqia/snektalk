@@ -19,7 +19,7 @@ class PFDb(bdb.Bdb):
     def reset(self):
         super().reset()
         self.session = current_session()
-        self.prompt = H.span["pf-input-mode-debug"]("debug>")
+        self.prompt = H.span["snek-input-mode-debug"]("debug>")
         self.nav = ReadOnly({
             "filename": "",
             "content": "",
@@ -31,7 +31,7 @@ class PFDb(bdb.Bdb):
 
     def user_line(self, frame):
         if frame.f_code.co_filename.startswith(_here):
-            # Avoid running the debugger in pf code
+            # Avoid running the debugger in snektalk code
             self.set_continue()
             return
         self.set_frame(frame)

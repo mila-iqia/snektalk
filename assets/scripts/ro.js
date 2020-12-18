@@ -4,14 +4,14 @@ define(["ace", "repl"], (ace, repl) => {
 
     class ReadOnlyEditor {
         constructor(element, options) {
-            element.className = "pf-bedit-readonly";
+            element.className = "snek-bedit-readonly";
 
             let edelem = document.createElement("div");
-            edelem.className = "pf-bedit-editor";
+            edelem.className = "snek-bedit-editor";
             edelem.onclick = event => {};
 
             let status = document.createElement("div");
-            status.className = "pf-bedit-status";
+            status.className = "snek-bedit-status";
 
             element.appendChild(edelem);
             element.appendChild(status);
@@ -58,7 +58,7 @@ define(["ace", "repl"], (ace, repl) => {
             if (highlight !== null && highlight !== undefined) {
                 let range = new Range(highlight, 0, highlight, 1);
                 this.mark = this.editor.session.addMarker(
-                    range, "pf-bedit-hl", "fullLine"
+                    range, "snek-bedit-hl", "fullLine"
                 );
                 this.editor.moveCursorTo(highlight, 0);
                 setTimeout(

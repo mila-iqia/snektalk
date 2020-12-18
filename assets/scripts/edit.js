@@ -33,18 +33,18 @@ define(["ace", "repl"], function(ace, repl) {
             this.element = element;
 
             let edelem = document.createElement("div");
-            edelem.className = "pf-bedit-editor"
+            edelem.className = "snek-bedit-editor"
             edelem.onclick = event => {}
 
             let status = document.createElement("div");
-            status.className = "pf-bedit-status"
+            status.className = "snek-bedit-status"
 
             let status_filename = document.createElement("div");
-            status_filename.className = "pf-bedit-filename"
+            status_filename.className = "snek-bedit-filename"
             status_filename.innerText = options.filename;
 
             let status_state = document.createElement("div");
-            status_state.className = "pf-bedit-state"
+            status_state.className = "snek-bedit-state"
             status_state.innerText = "live, saved on disk"
             this.status_state = status_state;
 
@@ -118,7 +118,7 @@ define(["ace", "repl"], function(ace, repl) {
             editor.setValue(options.content.live, -1);
             if (options.highlight !== null && options.highlight !== undefined) {
                 let range = new Range(options.highlight, 0, options.highlight, 1);
-                this.mark = editor.session.addMarker(range, "pf-bedit-hl", "fullLine");
+                this.mark = editor.session.addMarker(range, "snek-bedit-hl", "fullLine");
                 editor.moveCursorTo(options.highlight, 0);
                 editor.renderer.scrollCursorIntoView();
             }
@@ -129,7 +129,7 @@ define(["ace", "repl"], function(ace, repl) {
             // in editor.session.
             if (options.protectedPrefix) {
                 let prot = new Range(0, 0, options.protectedPrefix - 1, 1);
-                editor.session.addMarker(prot, "pf-bedit-protected", "fullLine");
+                editor.session.addMarker(prot, "snek-bedit-protected", "fullLine");
             }
 
             this.funcId = options.funcId;
@@ -165,7 +165,7 @@ define(["ace", "repl"], function(ace, repl) {
 
         setStatus(status, message) {
             this.status = status;
-            this.element.className = "pf-bedit pf-bedit-" + status;
+            this.element.className = "snek-bedit snek-bedit-" + status;
             if (status === "saved") {
                 this.status_state.innerText = message || "live, saved on disk";
             }

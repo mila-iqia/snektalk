@@ -18,7 +18,7 @@ orig_print = print
 
 class PrintSequence(tuple):
     def __hrepr__(self, H, hrepr):
-        return H.div["pf-print-sequence"](
+        return H.div["snek-print-sequence"](
             *[H.div(hrepr(x)) for x in self], onclick=False
         )
 
@@ -30,7 +30,7 @@ def snekprint(*args, **kwargs):
         orig_print(*args, **kwargs)
     else:
         if all(isinstance(arg, str) for arg in args):
-            html = H.div["pf-print-str"](" ".join(args))
+            html = H.div["snek-print-str"](" ".join(args))
         else:
             html = hrepr(PrintSequence(args), **kwargs)
         sess.queue(
@@ -88,11 +88,11 @@ class PFHrepr(Hrepr):
     def collapsible(self, title, body, start_visible=False):
         body = self.H.div(self(body))
         if not start_visible:
-            body = body["pf-hidden"]
-        return self.H.div["pf-collapsible"](
-            self.H.div["pf-collapsible-title"](
+            body = body["snek-hidden"]
+        return self.H.div["snek-collapsible"](
+            self.H.div["snek-collapsible-title"](
                 title,
-                onclick="this.nextSibling.classList.toggle('pf-hidden')",
+                onclick="this.nextSibling.classList.toggle('snek-hidden')",
             ),
             body,
         )
@@ -118,7 +118,7 @@ class PFHrepr(Hrepr):
             ed = find_fn(code)
             parts.append(
                 self.collapsible(
-                    self.H.div["pf-title-row"](
+                    self.H.div["snek-title-row"](
                         self.H.span(code.co_name),
                         self.H.span(f"{code.co_filename}:{fr.f_lineno}"),
                     ),
@@ -140,7 +140,7 @@ class PFHrepr(Hrepr):
     def hrepr(self, fn: types.BuiltinFunctionType):
         if self.state.depth == 0:
             return H.instance(
-                H.pre["pf-docstring"](fn.__doc__),
+                H.pre["snek-docstring"](fn.__doc__),
                 type=fn.__name__,
                 vertical=True,
             )
@@ -194,7 +194,7 @@ class PFHrepr(Hrepr):
                     if name not in exclusions
                 ],
                 type=self.H.span(
-                    self.H.span["pf-block-type"]("module "), mod.__name__
+                    self.H.span["snek-block-type"]("module "), mod.__name__
                 ),
                 vertical=True,
             )
@@ -237,9 +237,9 @@ class PFHrepr(Hrepr):
 
         for _, clsname, clselem, nameelem, value in rows:
             css_class = (
-                "pf-clsname-principal"
+                "snek-clsname-principal"
                 if clsname == cls.__name__
-                else "pf-clsname"
+                else "snek-clsname"
             )
             tbl = tbl(
                 self.H.tr(
@@ -250,7 +250,7 @@ class PFHrepr(Hrepr):
             )
 
         title = self.H.span(
-            self.H.span["pf-block-type"]("class "), *join(clselems, " > ")
+            self.H.span["snek-block-type"]("class "), *join(clselems, " > ")
         )
 
         return self.H.instance(
@@ -297,7 +297,7 @@ class PFHrepr(Hrepr):
         )
 
     def hrepr(self, fn: Function):
-        html = self.H.div["pf-bedit"](
+        html = self.H.div["snek-bedit"](
             constructor="BackedEditor",
             options={
                 "funcId": fn.id,
