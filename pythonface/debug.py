@@ -9,7 +9,7 @@ from .utils import ReadOnly
 from .fntools import find_fn
 
 
-_sessfile = os.path.join(os.path.dirname(__file__), "session.py")
+_here = os.path.dirname(__file__)
 
 
 class PFDb(bdb.Bdb):
@@ -30,8 +30,8 @@ class PFDb(bdb.Bdb):
         self.last_method = (lambda *_: None), None
 
     def user_line(self, frame):
-        if frame.f_code.co_filename == _sessfile:
-            # Avoid running the debugger into session.py
+        if frame.f_code.co_filename.startswith(_here):
+            # Avoid running the debugger in pf code
             self.set_continue()
             return
         self.set_frame(frame)
@@ -69,6 +69,7 @@ class PFDb(bdb.Bdb):
         frame = self.get_frame()
         gs = frame.f_globals
         ls = frame.f_locals
+        cmd = None
         if not code.strip():
             method, arg = self.last_method
         else:
@@ -82,7 +83,8 @@ class PFDb(bdb.Bdb):
                 cmd = code
                 arg = ''
             method = self.__commands__.get(cmd, None)
-        self.last_method = method, arg
+        if method and cmd != "!":
+            self.last_method = method, arg
         if method:
             return method(self, arg, gs, ls)
         else:
