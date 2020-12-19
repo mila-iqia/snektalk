@@ -6,7 +6,7 @@ from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .fntools import Function, find_fn
 from .session import current_session
-from .utils import join, sktk_hjson, represents
+from .utils import join, represents, sktk_hjson
 
 ##################
 # SnekTalk print #
@@ -34,9 +34,7 @@ def snekprint(*args, **kwargs):
         else:
             html = hrepr(PrintSequence(args), **kwargs)
         sess.queue(
-            command="result",
-            value=html,
-            type="print",
+            command="result", value=html, type="print",
         )
     builtins.print = snekprint
 
@@ -100,9 +98,7 @@ class SnekTalkHrepr(Hrepr):
     def hrepr(self, exc: Exception):
         exc_proper = self.H.div["hrepr-error", "hrepr-instance", "hreprl-h"](
             self.H.div["hrepr-title"](type(exc).__name__),
-            self.H.div["hrepr-error-message"](
-                self.H.code(exc.args[0]),
-            ),
+            self.H.div["hrepr-error-message"](self.H.code(exc.args[0])),
         )
 
         if self.state.depth > 0:
@@ -253,11 +249,7 @@ class SnekTalkHrepr(Hrepr):
             self.H.span["snek-block-type"]("class "), *join(clselems, " > ")
         )
 
-        return self.H.instance(
-            tbl,
-            type=title,
-            vertical=True,
-        )
+        return self.H.instance(tbl, type=title, vertical=True)
 
     def hrepr_short(self, clsm: (classmethod, staticmethod)):
         return self.H.defn(type(clsm).__name__, shortname(clsm.__func__))
@@ -291,10 +283,7 @@ class SnekTalkHrepr(Hrepr):
             return NotImplemented
 
     def hrepr_resources(self, fn: Function):
-        return self.H.javascript(
-            export="BackedEditor",
-            src="scripts/edit.js",
-        )
+        return self.H.javascript(export="BackedEditor", src="scripts/edit.js")
 
     def hrepr(self, fn: Function):
         html = self.H.div["snek-bedit"](
@@ -327,9 +316,6 @@ def inject():
         mixins=SnekTalkHrepr,
         postprocess=wrap_onclick,
         backend=standard_html.copy(
-            initial_state={
-                "hjson": sktk_hjson,
-                "requirejs_resources": [],
-            }
+            initial_state={"hjson": sktk_hjson, "requirejs_resources": []}
         ),
     )

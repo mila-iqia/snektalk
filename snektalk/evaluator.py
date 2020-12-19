@@ -17,10 +17,7 @@ class Evaluator:
     def run(self, thing, glb=None, lcl=None):
         if isinstance(thing, str):
             self.session.schedule(
-                self.session.direct_send(
-                    command="echo",
-                    value=thing,
-                )
+                self.session.direct_send(command="echo", value=thing)
             )
 
         try:

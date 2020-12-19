@@ -80,11 +80,7 @@ def _get_indent(src):
 
 
 def declare_virtual_codefile(filename, functions):
-    codefile = CodeFile(
-        module=None,
-        filename=filename,
-        functions=functions,
-    )
+    codefile = CodeFile(module=None, filename=filename, functions=functions)
     codefiles[filename] = codefile
     return codefile
 

@@ -45,16 +45,9 @@ def join(elems, sep):
 def _default_click(obj, evt):
     sess = current_session()
     if evt.get("shiftKey", False):
-        sess.queue(
-            command="result",
-            value=hrepr(obj),
-            type="print",
-        )
+        sess.queue(command="result", value=hrepr(obj), type="print")
     else:
-        sess.queue(
-            command="pastevar",
-            value=sess.getvar(obj),
-        )
+        sess.queue(command="pastevar", value=sess.getvar(obj))
 
 
 def _safe_set(elem, **props):
@@ -106,11 +99,7 @@ class AJSCaller(BaseJSCaller):
         async def call(*args):
             code = self._getcode(method_name, args)
             prom = asyncio.Promise()
-            current_session().queue(
-                command="eval",
-                value=code,
-                promise=prom,
-            )
+            current_session().queue(command="eval", value=code, promise=prom)
             return await prom
 
         return call
@@ -127,10 +116,7 @@ class JSCaller(BaseJSCaller):
             if self._return_hrepr:
                 return H.javascript(code)
             else:
-                current_session().queue(
-                    command="eval",
-                    value=code,
-                )
+                current_session().queue(command="eval", value=code)
 
         return call
 
@@ -143,10 +129,7 @@ class Interactor:
         instance = cls(*args, **kwargs)
         html = hrepr(instance)
         if nav:
-            current_session().queue(
-                command="set_nav",
-                value=html,
-            )
+            current_session().queue(command="set_nav", value=html)
         else:
             print(html)
         return instance

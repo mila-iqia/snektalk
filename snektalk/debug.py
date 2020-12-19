@@ -4,10 +4,9 @@ import re
 
 from hrepr import H, hrepr
 
+from .fntools import find_fn
 from .session import Evaluator, current_session
 from .utils import ReadOnly
-from .fntools import find_fn
-
 
 _here = os.path.dirname(__file__)
 
@@ -20,12 +19,9 @@ class SnekTalkDb(bdb.Bdb):
         super().reset()
         self.session = current_session()
         self.prompt = H.span["snek-input-mode-debug"]("debug>")
-        self.nav = ReadOnly({
-            "filename": "",
-            "content": "",
-            "firstlineno": 1,
-            "highlight": 1,
-        })
+        self.nav = ReadOnly(
+            {"filename": "", "content": "", "firstlineno": 1, "highlight": 1}
+        )
         self.session.set_nav(self.nav)
         self.last_method = (lambda *_: None), None
 
@@ -44,10 +40,7 @@ class SnekTalkDb(bdb.Bdb):
             )
         else:
             self.nav.js.update(
-                fn.source["live"],
-                fn.filename,
-                fn.firstlineno,
-                frame.f_lineno,
+                fn.source["live"], fn.filename, fn.firstlineno, frame.f_lineno,
             )
 
     def get_frame(self):
@@ -73,15 +66,15 @@ class SnekTalkDb(bdb.Bdb):
         if not code.strip():
             method, arg = self.last_method
         else:
-            m = re.match(r'^[?!]+', code)
+            m = re.match(r"^[?!]+", code)
             if m:
-                cmd = code[:m.end()]
-                arg = code[m.end():]
-            elif ' ' in code:
-                cmd, arg = code.split(' ', 1)
+                cmd = code[: m.end()]
+                arg = code[m.end() :]
+            elif " " in code:
+                cmd, arg = code.split(" ", 1)
             else:
                 cmd = code
-                arg = ''
+                arg = ""
             method = self.__commands__.get(cmd, None)
         if method and cmd != "!":
             self.last_method = method, arg
@@ -138,12 +131,12 @@ class SnekTalkDb(bdb.Bdb):
         stack trace (to an older frame).
         """
         if self.current == 0:
-            self.error('Oldest frame')
+            self.error("Oldest frame")
             return
         try:
             count = int(arg or 1)
         except ValueError:
-            self.error('Invalid frame count (%s)' % arg)
+            self.error("Invalid frame count (%s)" % arg)
             return
         if count < 0:
             self.current = 0
@@ -157,12 +150,12 @@ class SnekTalkDb(bdb.Bdb):
         stack trace (to a newer frame).
         """
         if self.current + 1 == len(self.stack):
-            self.error('Newest frame')
+            self.error("Newest frame")
             return
         try:
             count = int(arg or 1)
         except ValueError:
-            self.error('Invalid frame count (%s)' % arg)
+            self.error("Invalid frame count (%s)" % arg)
             return
         if count < 0:
             self.current = len(self.stack) - 1
@@ -189,9 +182,7 @@ class SnekTalkDb(bdb.Bdb):
             for cmd in commands:
                 html = html(H.div(H.raw(cmd)))
             self.session.queue(
-                command="result",
-                type="print",
-                value=html,
+                command="result", type="print", value=html,
             )
 
     def command_quit(self, arg, gs, ls):
@@ -204,25 +195,25 @@ class SnekTalkDb(bdb.Bdb):
         self.proceed = True
 
     __commands__ = {
-        'step': command_step,
-        's': command_step,
-        'next': command_next,
-        'n': command_next,
-        'continue': command_continue,
-        'c': command_continue,
-        'return': command_return,
-        'r': command_return,
-        'up': command_up,
-        'u': command_up,
-        'down': command_down,
-        'd': command_down,
-        'print': command_print,
-        'p': command_print,
-        'pp': command_print,
-        '!': command_print,
-        'help': command_help,
-        'h': command_help,
-        '?': command_help,
-        'quit': command_quit,
-        'q': command_quit,
+        "step": command_step,
+        "s": command_step,
+        "next": command_next,
+        "n": command_next,
+        "continue": command_continue,
+        "c": command_continue,
+        "return": command_return,
+        "r": command_return,
+        "up": command_up,
+        "u": command_up,
+        "down": command_down,
+        "d": command_down,
+        "print": command_print,
+        "p": command_print,
+        "pp": command_print,
+        "!": command_print,
+        "help": command_help,
+        "h": command_help,
+        "?": command_help,
+        "quit": command_quit,
+        "q": command_quit,
     }

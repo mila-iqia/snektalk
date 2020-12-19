@@ -105,17 +105,11 @@ class Session:
 
     def set_prompt(self, prompt):
         if prompt != self.last_prompt:
-            self.queue(
-                command="set_mode",
-                html=prompt,
-            )
+            self.queue(command="set_mode", html=prompt)
 
     def set_nav(self, nav):
         if nav != self.last_nav:
-            self.queue(
-                command="set_nav",
-                value=hrepr(nav),
-            )
+            self.queue(command="set_nav", value=hrepr(nav))
             self.last_nav = nav
 
     @contextmanager
@@ -163,10 +157,7 @@ class Session:
 
         for resource in resources:
             if resource not in self.sent_resources:
-                await self.direct_send(
-                    command="resource",
-                    value=str(resource),
-                )
+                await self.direct_send(command="resource", value=str(resource))
                 self.sent_resources.add(resource)
 
         evalid = _current_evalid.get()
@@ -221,9 +212,7 @@ class Session:
                     result = cb(*arguments)
 
             await self.send(
-                command="response",
-                value=result,
-                response_id=response_id,
+                command="response", value=result, response_id=response_id
             )
 
         except Exception as exc:
