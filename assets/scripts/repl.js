@@ -484,7 +484,8 @@ export class Repl {
     }
 
     connect() {
-        let socket = new WebSocket('ws://localhost:6499/sktk?session=main');
+        let port = window.location.port;
+        let socket = new WebSocket(`ws://localhost:${port}/sktk?session=main`);
 
         socket.addEventListener('message', event => {
             let data = JSON.parse(event.data);
