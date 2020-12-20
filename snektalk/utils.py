@@ -122,6 +122,7 @@ class JSCaller(BaseJSCaller):
 
 
 class Interactor:
+    js_requires = {}
     js_code = None
 
     @classmethod
@@ -152,11 +153,15 @@ class Interactor:
 
     @classmethod
     def __hrepr_resources__(cls, H):
+        reqs = [
+            H.javascript(export=name, src=src)
+            for name, src in cls.js_requires.items()
+        ]
         if cls.js_code:
-            rval = H.javascript(cls.js_code)
+            main = H.javascript(cls.js_code, require=list(cls.js_requires.keys()))
         else:
-            rval = H.javascript(src=cls.js_source)
-        return [rval(export=cls.js_constructor)]
+            main = H.javascript(src=cls.js_source)
+        return [*reqs, main(export=cls.js_constructor)]
 
     def __hrepr__(self, H, hrepr):
         params = sktk_hjson(self.parameters)
