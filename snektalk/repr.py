@@ -39,6 +39,10 @@ def snekprint(*args, **kwargs):
     builtins.print = snekprint
 
 
+def help_placeholder(*args, **kwargs):
+    print(H.span("The help command is not available in snektalk for the moment."))
+
+
 class HDir:
     exclusions = {"__doc__", "__dict__"}
 
@@ -310,6 +314,7 @@ class SnekTalkHrepr(Hrepr):
 
 
 def inject():
+    builtins.help = help_placeholder
     builtins.print = snekprint
     builtins.hdir = hdir
     hrepr.configure(
