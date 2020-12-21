@@ -1,4 +1,7 @@
+import ast
+
 from hrepr import H
+
 
 class Evaluator:
     def __init__(self, session):
@@ -8,10 +11,27 @@ class Evaluator:
     def eval(self, expr, glb=None, lcl=None):
         if glb is None:
             glb = self.session.glb
-        try:
-            return eval(expr, glb, lcl)
-        except SyntaxError:
-            exec(expr, glb, lcl)
+        filename = "<repl>"
+        tree = ast.parse(expr)
+        assert isinstance(tree, ast.Module)
+        assert len(tree.body) > 0
+        *body, last = tree.body
+        if isinstance(last, ast.Expr):
+            last = ast.Expression(last.value)
+        else:
+            body.append(last)
+            last = None
+        for stmt in body:
+            compiled = compile(
+                ast.Module(body=[stmt], type_ignores=[]),
+                mode="exec",
+                filename=filename,
+            )
+            exec(compiled, glb, lcl)
+        if last:
+            compiled = compile(last, mode="eval", filename=filename)
+            return eval(compiled, glb, lcl)
+        else:
             return None
 
     def run(self, thing, glb=None, lcl=None):
