@@ -37,6 +37,25 @@ def join(elems, sep):
     return rval
 
 
+_path_replacements = {
+    "PWD": "",
+    "CONDA_PREFIX": "$CONDA_PREFIX/",
+    "VIRTUAL_ENV": "$VIRTUAL_ENV/",
+    "HOME": "~/",
+}
+
+
+def format_libpath(path):
+    for var, pfx in sorted(_path_replacements.items(), key=lambda kv: kv[1]):
+        if (val := os.environ.get(var, None)) is not None:
+            if not val.endswith("/"):
+                val += "/"
+            if path.startswith(val):
+                return os.path.join(pfx, path[len(val):])
+    else:
+        return path
+
+
 ###########################
 # Click/shift-click logic #
 ###########################

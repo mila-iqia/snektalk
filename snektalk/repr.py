@@ -6,7 +6,7 @@ from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .fntools import find_fn
 from .session import current_session
-from .utils import join, represents, sktk_hjson
+from .utils import format_libpath, join, represents, sktk_hjson
 
 ##################
 # SnekTalk print #
@@ -40,7 +40,9 @@ def snekprint(*args, **kwargs):
 
 
 def help_placeholder(*args, **kwargs):
-    print(H.span("The help command is not available in snektalk for the moment."))
+    print(
+        H.span("The help command is not available in snektalk for the moment.")
+    )
 
 
 class HDir:
@@ -120,7 +122,7 @@ class SnekTalkHrepr(Hrepr):
                 self.collapsible(
                     self.H.div["snek-title-row"](
                         self.H.span(code.co_name),
-                        self.H.span(f"{code.co_filename}:{fr.f_lineno}"),
+                        self.H.span(f"{format_libpath(code.co_filename)}:{fr.f_lineno}"),
                     ),
                     self(ed, code_highlight=hl)
                     if ed
