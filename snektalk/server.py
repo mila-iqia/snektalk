@@ -5,6 +5,7 @@ import random
 import socket
 import subprocess
 
+import jurigged
 from hrepr import H
 from sanic import Sanic
 
@@ -62,6 +63,16 @@ def serve(glb=None):
     app.run(host="0.0.0.0", port=6499)
 
 
+def status_logger(sess):
+    def log(event):
+        sess.queue(
+            command="status",
+            type="normal",
+            value=str(event),
+        )
+    return log
+
+
 def run(func):
     glb = func.__globals__
     port = find_port(6499, min_port=6500, max_port=6600)
@@ -75,6 +86,7 @@ def run(func):
     async def feed(request, ws):
         sess = Session(glb or {}, ws, Evaluator)
         sess.schedule(sess.command_submit(expr=func))
+        jurigged.watch(logger=status_logger(sess))
         while True:
             command = json.loads(await ws.recv())
             print("recv", command)
