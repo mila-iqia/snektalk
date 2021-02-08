@@ -4,6 +4,7 @@ import os
 import random
 import socket
 import subprocess
+import sys
 
 import jurigged
 from hrepr import H
@@ -66,15 +67,14 @@ def serve(glb=None):
 def status_logger(sess):
     def log(event):
         sess.queue(
-            command="status",
-            type="normal",
-            value=str(event),
+            command="status", type="normal", value=str(event),
         )
+
     return log
 
 
-def run(func):
-    glb = func.__globals__
+def run(func, watch_args=None):
+    module = sys.modules[func.__globals__["__name__"]]
     port = find_port(6499, min_port=6500, max_port=6600)
 
     app = Sanic("snektalk")
@@ -84,9 +84,10 @@ def run(func):
 
     @app.websocket("/sktk")
     async def feed(request, ws):
-        sess = Session(glb or {}, ws, Evaluator)
+        sess = Session(module, ws, Evaluator)
         sess.schedule(sess.command_submit(expr=func))
-        jurigged.watch(logger=status_logger(sess))
+        if watch_args is not None:
+            jurigged.watch(**watch_args, logger=status_logger(sess))
         while True:
             command = json.loads(await ws.recv())
             print("recv", command)

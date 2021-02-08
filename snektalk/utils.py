@@ -1,3 +1,4 @@
+import os
 from itertools import count
 from types import FunctionType, MethodType
 
@@ -51,7 +52,7 @@ def format_libpath(path):
             if not val.endswith("/"):
                 val += "/"
             if path.startswith(val):
-                return os.path.join(pfx, path[len(val):])
+                return os.path.join(pfx, path[len(val) :])
     else:
         return path
 
@@ -95,6 +96,7 @@ class BaseJSCaller:
     def __init__(self, interactor, jsid):
         self._interactor = interactor
         self._jsid = jsid
+        self._session = current_session()
 
     def _getcode(self, method_name, args):
         if not self._interactor:
@@ -118,7 +120,7 @@ class AJSCaller(BaseJSCaller):
         async def call(*args):
             code = self._getcode(method_name, args)
             prom = asyncio.Promise()
-            current_session().queue(command="eval", value=code, promise=prom)
+            self._session.queue(command="eval", value=code, promise=prom)
             return await prom
 
         return call
@@ -135,7 +137,7 @@ class JSCaller(BaseJSCaller):
             if self._return_hrepr:
                 return H.javascript(code)
             else:
-                current_session().queue(command="eval", value=code)
+                self._session.queue(command="eval", value=code)
 
         return call
 
@@ -177,7 +179,9 @@ class Interactor:
             for name, src in cls.js_requires.items()
         ]
         if cls.js_code:
-            main = H.javascript(cls.js_code, require=list(cls.js_requires.keys()))
+            main = H.javascript(
+                cls.js_code, require=list(cls.js_requires.keys())
+            )
         else:
             main = H.javascript(src=cls.js_source)
         return [*reqs, main(export=cls.js_constructor)]
