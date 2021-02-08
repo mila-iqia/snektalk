@@ -3,10 +3,11 @@ import os
 import re
 
 from hrepr import H, hrepr
+from jurigged import registry
 
 from .fntools import find_fn
 from .session import Evaluator, current_session
-from .utils import ReadOnly
+from .utils import ReadOnly, format_libpath
 
 _here = os.path.dirname(__file__)
 
@@ -33,14 +34,17 @@ class SnekTalkDb(bdb.Bdb):
         self.set_frame(frame)
 
     def show_frame(self, frame):
-        fn = find_fn(frame.f_code)
-        if fn is None:
+        cf, defn = registry.find(frame.f_code)
+        if defn is None:
             self.nav.js.update(
                 f"'Could not find source code for {frame.f_code.co_name}'"
             )
         else:
             self.nav.js.update(
-                fn.source["live"], fn.filename, fn.firstlineno, frame.f_lineno,
+                defn.live,
+                format_libpath(defn.filename),
+                defn.firstlineno,
+                frame.f_lineno,
             )
 
     def get_frame(self):

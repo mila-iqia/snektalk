@@ -2,54 +2,47 @@ from itertools import count
 
 from jurigged import make_recoder, registry
 
-from .utils import format_libpath, represents
+from .utils import Interactor, format_libpath, represents
 
 _c = count()
 
 
-class SnekRecoder:
-    def __init__(self, recoder, fn):
-        self.id = next(_c)
-        self.recoder = recoder
-        self.filename = recoder.codefile.filename
-        self.source = {
-            "live": self.recoder.focus.live,
-            "saved": self.recoder.focus.saved,
-        }
-        self.nlocked = 0
-        self.fn = fn
+class SnekRecoder(Interactor):
 
-    def recode(self, new_source):
+    js_constructor = "BackedEditor"
+    js_source = "/scripts/edit.js"
+
+    def __init__(self, recoder, fn, code_highlight=None):
+        self.recoder = recoder
+        self.fn = fn
+        self.id = next(_c)
+        super().__init__(
+            {
+                "funcId": self.id,
+                "content": {
+                    "live": self.recoder.focus.live,
+                    "saved": self.recoder.focus.saved,
+                },
+                "filename": format_libpath(self.recoder.codefile.filename),
+                "highlight": code_highlight,
+                "protectedPrefix": 0,
+            }
+        )
+        self.recoder.on_status.register(self.on_status)
+
+    def on_status(self, recoder, status):
+        if status == "out-of-sync":
+            self.js.setStatus("dirty", "out of sync")
+
+    def py_save(self, new_source):
         self.recoder.patch(new_source)
         return True
 
-    def replace(self, new_source):
-        if self.recode(new_source):
+    def py_commit(self, new_source):
+        if self.py_save(new_source):
             self.recoder.commit()
 
-    @classmethod
-    def __hrepr_resources__(cls, H):
-        return H.javascript(export="BackedEditor", src="scripts/edit.js")
 
-    def __hrepr__(self, H, hrepr):
-        html = H.div["snek-bedit"](
-            constructor="BackedEditor",
-            options={
-                "funcId": self.id,
-                "content": {
-                    "live": self.source["live"],
-                    "saved": self.source["saved"],
-                },
-                "filename": format_libpath(self.filename),
-                "save": self.recode,
-                "commit": self.replace,
-                "highlight": hrepr.config.code_highlight,
-                "protectedPrefix": self.nlocked,
-            },
-        )
-        return represents(self.fn, html)
-
-
-def find_fn(fn, module_name="?", qualname="?"):
+def find_fn(fn, **kwargs):
     recoder = make_recoder(fn)
-    return SnekRecoder(recoder, fn)
+    return recoder and SnekRecoder(recoder, fn, **kwargs)

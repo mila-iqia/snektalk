@@ -104,7 +104,9 @@ class SnekTalkHrepr(Hrepr):
     def hrepr(self, exc: Exception):
         exc_proper = self.H.div["hrepr-error", "hrepr-instance", "hreprl-h"](
             self.H.div["hrepr-title"](type(exc).__name__),
-            self.H.div["hrepr-error-message"](self.H.code(exc.args[0])),
+            self.H.div["hrepr-error-message"](
+                self.H.code(exc.args and exc.args[0])
+            ),
         )
 
         if self.state.depth > 0:
@@ -117,15 +119,17 @@ class SnekTalkHrepr(Hrepr):
             fr = curr.tb_frame
             code = fr.f_code
             hl = curr.tb_lineno - code.co_firstlineno
-            ed = find_fn(code)
+            ed = find_fn(code, code_highlight=hl)
             parts.append(
                 self.collapsible(
                     self.H.div["snek-title-row"](
                         self.H.span(code.co_name),
-                        self.H.span(f"{format_libpath(code.co_filename)}:{fr.f_lineno}"),
+                        self.H.span(
+                            f"{format_libpath(code.co_filename)}:{fr.f_lineno}"
+                        ),
                     ),
-                    self(ed, code_highlight=hl)
-                    if ed
+                    self(ed)
+                    if ed is not None
                     else self.H.span("Could not find source"),
                 )
             )
