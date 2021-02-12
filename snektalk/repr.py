@@ -4,6 +4,7 @@ from types import FunctionType, MethodType, ModuleType
 
 from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
+from .debug import SnekTalkDb
 from .fntools import find_fn
 from .session import current_session
 from .utils import format_libpath, join, represents, sktk_hjson
@@ -119,7 +120,7 @@ class SnekTalkHrepr(Hrepr):
             fr = curr.tb_frame
             code = fr.f_code
             hl = curr.tb_lineno - code.co_firstlineno
-            ed = find_fn(code, code_highlight=hl)
+            ed = find_fn(code, code_highlight=hl, max_height=19 * 7)
             parts.append(
                 self.collapsible(
                     self.H.div["snek-title-row"](
@@ -298,9 +299,14 @@ class SnekTalkHrepr(Hrepr):
 #####################################
 
 
+def snekbreakpoint():
+    SnekTalkDb().set_trace()
+
+
 def inject():
     builtins.help = help_placeholder
     builtins.print = snekprint
+    builtins.breakpoint = snekbreakpoint
     builtins.hdir = hdir
     hrepr.configure(
         mixins=SnekTalkHrepr,
