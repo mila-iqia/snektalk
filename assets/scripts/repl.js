@@ -66,8 +66,17 @@ export class Repl {
     }
 
     $globalKDEvent(evt) {
-        // Cmd+B => navigate to next visible editor
+        // Cmd+P => focus repl
         if (evt.metaKey && !evt.altKey && !evt.ctrlKey
+            && evt.key === "p") {
+
+            evt.preventDefault();
+            evt.stopPropagation();
+
+            this.editor.focus();
+        }
+        // Cmd+B => navigate to next visible editor
+        else if (evt.metaKey && !evt.altKey && !evt.ctrlKey
             && evt.key === "b") {
 
             evt.preventDefault();
