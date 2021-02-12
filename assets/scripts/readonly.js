@@ -1,6 +1,6 @@
 
 require.config({ paths: { "vs": "/scripts/vs" }});
-define(["vs/editor/editor.main", "repl"], (monaco, repl) => {
+define(["vs/editor/editor.main"], (monaco) => {
 
     class ReadOnlyEditor {
         constructor(element, options) {

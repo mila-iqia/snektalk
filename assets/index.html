@@ -5,8 +5,6 @@
         <meta http-equiv="Content-type" content="text/html" charset="UTF-8" />
         <link rel="stylesheet" href="/style/snek.css">
         <script type="text/javascript" src="/scripts/require.min.js"></script>
-        <script type="text/javascript" src="/scripts/ace/ace.js"></script>
-        <script>define("ace", [], ace);</script>
     </head>
     <body>
         <div id="main">
@@ -25,11 +23,12 @@
                 </div>
             </div>
         </div>
-        <script type="module">
-            import { Repl } from "/scripts/repl.js";
-            let repl = new Repl(document.getElementById("main"));
-            repl.connect();
-            repl.editor.focus();
+        <script>
+            require(["scripts/repl"], repl => {
+                let the_repl = new repl.Repl(document.getElementById("main"));
+                the_repl.connect();
+                the_repl.editor.focus();
+            });
         </script>
     </body>
 </html>

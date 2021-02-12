@@ -1,6 +1,6 @@
 
 require.config({ paths: { 'vs': '/scripts/vs' }});
-define(["vs/editor/editor.main", "repl"], (monaco, repl) => {
+define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
     const KM = monaco.KeyMod;
     const KC = monaco.KeyCode;
 

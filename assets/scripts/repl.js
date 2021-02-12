@@ -37,16 +37,21 @@ function isElementInViewport(el) {
     );
 }
 
+require.config({ paths: { 'vs': '/scripts/vs' }});
+define(["vs/editor/editor.main"], (monaco) => {
 
-let allEditors = [];
+const KM = monaco.KeyMod;
+const KC = monaco.KeyCode;
+
 let mainRepl = null;
 let evalIdGen = 0;
 
 
-export class Repl {
+class Repl {
 
     constructor(target) {
         this.container = target;
+        this.options = {};
         this.pane = target.querySelector(".snek-pane");
         this.outerPane = target.querySelector(".snek-outer-pane");
         this.pinpane = target.querySelector(".snek-pin-pane");
@@ -223,19 +228,59 @@ export class Repl {
         }
     }
 
+    event_updateHeight() {
+        if (!this.ignoreEvent) {
+            const contentHeight = Math.min(
+                this.options.max_height || 500,
+                this.editor.getContentHeight()
+            );
+            this.inputBox.style.height = `${contentHeight}px`;
+            try {
+                this.ignoreEvent = true;
+                this.editor.layout({ width: this.inputBox.offsetWidth, height: contentHeight });
+            } finally {
+                this.ignoreEvent = false;
+            }
+        }
+    }
+
     _setupEditor(target) {
-        let editor = ace.edit(target);
-        allEditors.push(new WeakRef(editor));
-        editor.setOptions({
-            showLineNumbers: false,
-            showGutter: false,
-            displayIndentGuides: false,
-            showPrintMargin: false,
-            highlightActiveLine: false,
-            maxLines: 10,
+        target.style.height = "19px";
+        let editor = monaco.editor.create(target, {
+            value: "",
+            language: 'python',
+            lineNumbers: false,
+            minimap: {enabled: false},
+            scrollBeyondLastLine: false,
+            overviewRulerLanes: 0,
+            folding: false,
+            renderLineHighlight: "none",
+            lineDecorationsWidth: 0,
         });
-        editor.setTheme("ace/theme/xcode");
-        editor.session.setMode("ace/mode/python");
+        this.editor = editor;
+        target.classList.add("snek-editor-cyclable");
+        target.$editor = this.editor;
+        this.editor.onDidContentSizeChange(this.event_updateHeight.bind(this));
+
+        this.atBeginning = this.editor.createContextKey("atBeginning", true);
+        this.atEnd = this.editor.createContextKey("atEnd", true);
+        this.multiline = this.editor.createContextKey("multiline", false);
+
+        this.editor.onDidChangeCursorPosition(() => {
+            let position = editor.getPosition();
+            let lineno = position.lineNumber;
+            let total = editor.getModel().getLineCount();
+            this.atBeginning.set(lineno == 1);
+            this.atEnd.set(lineno == total);
+        });
+
+        this.editor.getModel().onDidChangeContent(() => {
+            let total = editor.getModel().getLineCount();
+            this.multiline.set(
+                total > 1
+                || editor.getModel().getLineContent(1).match(/[\(\[\{:]$/)
+            )
+        });
 
         let _submit = () => {
             let val = editor.getValue();
@@ -257,84 +302,43 @@ export class Repl {
             this.outerPane.scrollTop = 0;
         }
 
-        editor.commands.addCommand({
-            name: "maybe-submit",
-            bindKey: "Enter",
-            exec: editor => {
-                let value = editor.getValue();
-                let lines = value.split("\n");
-                if (lines.length == 1 && !lines[0].match(/[\(\[\{:]$/)) {
-                    _submit();
-                }
-                else {
-                    editor.session.insert(editor.getCursorPosition(), "\n ");
-                    editor.selection.selectLine();
-                    editor.autoIndent();
-                    editor.renderer.scrollCursorIntoView();
-                }
-            }
-        });
+        editor.addCommand(
+            KC.Enter,
+            _submit,
+            "!multiline"
+        );
 
-        editor.commands.addCommand({
-            name: "submit",
-            bindKey: "Ctrl+Enter",
-            exec: editor => {
-                _submit();
-            }
-        });
+        editor.addCommand(
+            KM.WinCtrl | KC.Enter,
+            _submit
+        );
 
-        editor.commands.addCommand({
-            name: "clear",
-            bindKey: "Ctrl+L",
-            exec: editor => {
-                this.pane.innerHTML = "";
-            }
-        });
+        editor.addCommand(
+            KM.WinCtrl | KC.KEY_L,
+            () => { this.pane.innerHTML = ""; }
+        );
 
-        editor.commands.addCommand({
-            name: "agglutinate-history-previous",
-            bindKey: "Alt+Up",
-            exec: editor => {
-                this.historyShift(-1, true);
-            }
-        });
+        // editor.addCommand(
+        //     KM.Alt | KC.UpArrow,
+        //     () => { this.historyShift(-1, true); },
+        // );
 
-        editor.commands.addCommand({
-            name: "agglutinate-history-next",
-            bindKey: "Alt+Down",
-            exec: editor => {
-                this.historyShift(1, true);
-            }
-        });
+        // editor.addCommand(
+        //     KM.Alt | KC.DownArrow,
+        //     () => { this.historyShift(1, true); },
+        // );
 
-        editor.commands.addCommand({
-            name: "history-previous",
-            bindKey: "Up",
-            exec: editor => {
-                if (editor.getCursorPosition().row === 0) {
-                    this.historyShift(-1);
-                }
-                else {
-                    editor.navigateUp(1);
-                    editor.renderer.scrollCursorIntoView();
-                }
-            }
-        });
+        editor.addCommand(
+            KC.UpArrow,
+            () => { this.historyShift(-1); },
+            "atBeginning"
+        );
 
-        editor.commands.addCommand({
-            name: "history-next",
-            bindKey: "Down",
-            exec: editor => {
-                let nlines = editor.getValue().split("\n").length;
-                if (editor.getCursorPosition().row === nlines - 1) {
-                    this.historyShift(1);
-                }
-                else {
-                    editor.navigateDown(1);
-                    editor.renderer.scrollCursorIntoView();
-                }
-            }
-        });
+        editor.addCommand(
+            KC.DownArrow,
+            () => { this.historyShift(1); },
+            "atEnd"
+        );
 
         this.editor = editor;
     }
@@ -364,10 +368,15 @@ export class Repl {
         this.historyRange = [new_htop, new_hbot];
         let text = this.history.slice(new_hbot, new_htop + 1).reverse().join("\n");
 
-        this.editor.setValue(text, -delta);
-        // We still want to be at the end of the line, though:
-        this.editor.navigateLineEnd();
-        this.editor.renderer.scrollCursorIntoView();
+        this.editor.setValue(text);
+
+        if (delta < 0) {
+            let nlines = this.editor.getModel().getLineCount();
+            this.editor.setPosition({lineNumber: nlines, column: 1000000});
+        }
+        else {
+            this.editor.setPosition({lineNumber: 1, column: 1000000});
+        }
     }
 
     reify(html) {
@@ -380,21 +389,11 @@ export class Repl {
     read_only_editor(text) {
         let elem = document.createElement("div");
         elem.style.width = this.pane.offsetWidth - 100;
-        let editor = ace.edit(elem)
-        editor.setValue(text, -1);
-        editor.setTheme("ace/theme/xcode");
-        editor.session.setMode("ace/mode/python");
-        editor.setOptions({
-            showLineNumbers: false,
-            showGutter: false,
-            displayIndentGuides: false,
-            showPrintMargin: false,
-            highlightActiveLine: false,
-            minLines: 1,
-            maxLines: 10,
-            readOnly: true,
-        });
-        editor.renderer.$cursorLayer.element.style.display = "none";
+
+        monaco.editor
+        .colorize(text, "python")
+        .then(result => { elem.innerHTML = result; });
+
         return elem;
     }
     
@@ -482,7 +481,7 @@ export class Repl {
         }
         else if (data.command == "pastevar") {
             let varname = data.value;
-            this.editor.session.insert(this.editor.getCursorPosition(), varname);
+            this.editor.trigger("keyboard", "type", {text: varname});
             this.editor.focus();
         }
         else if (data.command == "status") {
@@ -542,10 +541,10 @@ export class Repl {
 
 
 let exports = {
-    allEditors,
     mainRepl,
     Repl,
 }
 
+return exports;
 
-define("repl", [], exports);
+});
