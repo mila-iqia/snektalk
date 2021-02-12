@@ -46,6 +46,7 @@ let evalIdGen = 0;
 export class Repl {
 
     constructor(target) {
+        this.container = target;
         this.pane = target.querySelector(".snek-pane");
         this.outerPane = target.querySelector(".snek-outer-pane");
         this.pinpane = target.querySelector(".snek-pin-pane");
@@ -73,27 +74,10 @@ export class Repl {
             evt.stopPropagation();
     
             // Find alive and visible editors
-            let editors = [];
-            let wkeditors = [];
-
-            for (let wkeditor of allEditors) {
-                let editor = wkeditor.deref();
-                if (editor) {
-                    // Alive
-                    wkeditors.push(wkeditor);
-                    // Visible
-                    if (isElementInViewport(editor.container)) {
-                        editors.push(editor);
-                    }
-                }
-            }
-            allEditors.splice(0, allEditors.length, ...wkeditors);
-
-            if (!evt.shiftKey) {
-                editors.reverse();
-                // REPL box should still be editor 0
-                editors.unshift(editors.pop());
-            }
+            let editors = Array
+            .from(this.container.querySelectorAll(".snek-editor-cyclable"))
+            .filter(container => isElementInViewport(container))
+            .map(container => container.$editor);
 
             let focused = null;
             for (let editor of editors) {
@@ -101,11 +85,11 @@ export class Repl {
                     editor.focus();
                     return;
                 }
-                if (editor.isFocused()) {
+                if (editor.hasTextFocus()) {
                     focused = editor;
                 }
             }
-            if (editors) {
+            if (editors.length > 0) {
                 editors[0].focus();
             }
         }

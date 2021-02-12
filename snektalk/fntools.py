@@ -9,23 +9,21 @@ _c = count()
 
 class SnekRecoder(Interactor):
 
-    js_constructor = "BackedEditor"
-    js_source = "/scripts/edit.js"
+    js_constructor = "SnekEditor"
+    js_source = "/scripts/liveedit.js"
 
-    def __init__(self, recoder, fn, code_highlight=None):
+    def __init__(self, recoder, fn, code_highlight=None, max_height=500):
         self.recoder = recoder
         self.fn = fn
-        self.id = next(_c)
         super().__init__(
             {
-                "funcId": self.id,
                 "content": {
                     "live": self.recoder.focus.live,
                     "saved": self.recoder.focus.saved,
                 },
                 "filename": format_libpath(self.recoder.codefile.filename),
                 "highlight": code_highlight,
-                "protectedPrefix": 0,
+                "max_height": max_height,
             }
         )
         self.recoder.on_status.register(self.on_status)
