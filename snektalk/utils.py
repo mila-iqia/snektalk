@@ -229,4 +229,4 @@ class Interactor:
 
 class ReadOnly(Interactor):
     js_constructor = "ReadOnlyEditor"
-    js_source = "/scripts/ro.js"
+    js_source = "/scripts/readonly.js"
