@@ -9,7 +9,7 @@ _c = count()
 
 class SnekRecoder(Interactor):
 
-    js_constructor = "SnekEditor"
+    js_constructor = "LiveEditor"
     js_source = "/scripts/liveedit.js"
 
     def __init__(self, recoder, fn, code_highlight=None, max_height=500):
