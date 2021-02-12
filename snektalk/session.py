@@ -34,8 +34,9 @@ def new_evalid():
 
 
 class Session:
-    def __init__(self, glb, socket, evaluator_class):
-        self.glb = glb
+    def __init__(self, module, socket, evaluator_class):
+        self.module = module
+        self.glb = vars(module)
         self.blt = vars(builtins)
         self.idmap = {}
         self.varcount = count(1)
@@ -61,6 +62,9 @@ class Session:
             yield
         finally:
             _current_session.reset(token)
+
+    def set_globals(self, glb):
+        self.glb = glb
 
     def newvar(self):
         """Create a new variable."""
