@@ -1,5 +1,5 @@
 
-require.config({ paths: { "vs": "/scripts/vs" }});
+require.config({ paths: { "vs": "/lib/vs" }});
 define(["vs/editor/editor.main"], (monaco) => {
 
     class ReadOnlyEditor {

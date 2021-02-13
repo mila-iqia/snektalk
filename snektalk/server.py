@@ -13,7 +13,7 @@ from sanic import Sanic
 from .session import Evaluator, Session
 
 here = os.path.dirname(__file__)
-assets_path = os.path.join(here, "../assets")
+assets_path = os.path.join(here, "assets")
 
 
 def check_port(port):
@@ -44,6 +44,7 @@ def find_port(preferred_port, min_port, max_port):
 def define(glb=None):
     app = Sanic("snektalk")
     app.static("/", f"{assets_path}/index.html")
+    app.static("/lib/", f"{assets_path}/lib/")
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
 
@@ -79,6 +80,7 @@ def run(func, watch_args=None):
 
     app = Sanic("snektalk")
     app.static("/", f"{assets_path}/index.html")
+    app.static("/lib/", f"{assets_path}/lib/")
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
 

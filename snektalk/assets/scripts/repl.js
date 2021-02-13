@@ -37,7 +37,7 @@ function isElementInViewport(el) {
     );
 }
 
-require.config({ paths: { 'vs': '/scripts/vs' }});
+require.config({ paths: { 'vs': '/lib/vs' }});
 define(["vs/editor/editor.main"], (monaco) => {
 
 const KM = monaco.KeyMod;
