@@ -308,6 +308,7 @@ def inject():
     builtins.print = snekprint
     builtins.breakpoint = snekbreakpoint
     builtins.hdir = hdir
+    builtins.print0 = orig_print
     hrepr.configure(
         mixins=SnekTalkHrepr,
         postprocess=wrap_onclick,

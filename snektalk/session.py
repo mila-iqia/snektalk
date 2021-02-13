@@ -219,6 +219,9 @@ class Session:
             )
 
         except Exception as exc:
+            import traceback
+
+            traceback.print_exc()
             await self.send(
                 command="response",
                 error={
