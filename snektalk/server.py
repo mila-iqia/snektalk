@@ -8,11 +8,11 @@ import sys
 import types
 
 import jurigged
-from hrepr import H
 from ovld import ovld
 from sanic import Sanic
 
-from .session import Evaluator, Session
+from .evaluator import Evaluator
+from .session import Session
 
 here = os.path.dirname(__file__)
 assets_path = os.path.join(here, "assets")
@@ -59,7 +59,7 @@ def run(func: types.FunctionType, **kwargs):
 
 
 @ovld
-def run(module: types.ModuleType, **kwargs):
+def run(module: types.ModuleType, **kwargs):  # noqa: F811
     return launch(module, None, **kwargs)
 
 

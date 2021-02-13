@@ -3,7 +3,7 @@ import runpy
 import sys
 
 from coleo import Option, default, run_cli
-from jurigged import registry, watch
+from jurigged import registry
 from jurigged.utils import glob_filter
 
 from .repr import inject

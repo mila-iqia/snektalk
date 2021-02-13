@@ -138,13 +138,13 @@ class SnekTalkHrepr(Hrepr):
 
         return self.H.div["hrepr-body"](*parts, exc_proper)
 
-    def hrepr(self, r: range):
+    def hrepr(self, r: range):  # noqa: F811
         rval = self.H.instance(self(r.start), self(r.stop), type="range")
         if r.step != 1:
             rval = rval(self(r.step))
         return rval
 
-    def hrepr(self, fn: types.BuiltinFunctionType):
+    def hrepr(self, fn: types.BuiltinFunctionType):  # noqa: F811
         if self.state.depth == 0:
             return H.instance(
                 H.pre["snek-docstring"](fn.__doc__),
@@ -154,7 +154,7 @@ class SnekTalkHrepr(Hrepr):
         else:
             return NotImplemented
 
-    def hrepr(self, fn: FunctionType):
+    def hrepr(self, fn: FunctionType):  # noqa: F811
         if self.state.depth == 0:
             ed = find_fn(fn)
             if ed is None:
@@ -163,7 +163,7 @@ class SnekTalkHrepr(Hrepr):
         else:
             return NotImplemented
 
-    def hrepr(self, fn: MethodType):
+    def hrepr(self, fn: MethodType):  # noqa: F811
         if self.state.depth == 0:
             ed = find_fn(fn.__func__)
             if ed is None:
@@ -174,7 +174,7 @@ class SnekTalkHrepr(Hrepr):
         else:
             return NotImplemented
 
-    def hrepr(self, mod: ModuleType):
+    def hrepr(self, mod: ModuleType):  # noqa: F811
         exclusions = {
             "__builtins__",
             "__name__",
@@ -208,7 +208,7 @@ class SnekTalkHrepr(Hrepr):
         else:
             return NotImplemented
 
-    def hrepr(self, cls: type):
+    def hrepr(self, cls: type):  # noqa: F811
         if self.state.depth > 0:
             return NotImplemented
 
@@ -262,10 +262,10 @@ class SnekTalkHrepr(Hrepr):
 
         return self.H.instance(tbl, type=title, vertical=True)
 
-    def hrepr_short(self, clsm: (classmethod, staticmethod)):
+    def hrepr_short(self, clsm: (classmethod, staticmethod)):  # noqa: F811
         return self.H.defn(type(clsm).__name__, shortname(clsm.__func__))
 
-    def hrepr(self, clsm: (classmethod, staticmethod)):
+    def hrepr(self, clsm: (classmethod, staticmethod)):  # noqa: F811
         fn = clsm.__func__
         if self.state.depth == 0 and isinstance(fn, FunctionType):
             ed = find_fn(fn)
@@ -275,12 +275,12 @@ class SnekTalkHrepr(Hrepr):
         else:
             return NotImplemented
 
-    def hrepr_short(self, prop: property):
+    def hrepr_short(self, prop: property):  # noqa: F811
         return self.H.defn(
             type(prop).__name__, shortname(prop.fget or prop.fset or prop.fdel)
         )
 
-    def hrepr(self, prop: property):
+    def hrepr(self, prop: property):  # noqa: F811
         if self.state.depth == 0:
             title = "property"
             return self.H.instance(

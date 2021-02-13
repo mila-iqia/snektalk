@@ -116,6 +116,7 @@ class BaseJSCaller:
 
 
 class AJSCaller(BaseJSCaller):
+    # TODO
     def __getattr__(self, method_name):
         async def call(*args):
             code = self._getcode(method_name, args)

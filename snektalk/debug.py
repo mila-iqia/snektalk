@@ -2,11 +2,10 @@ import bdb
 import os
 import re
 
-from hrepr import H, hrepr
+from hrepr import H
 from jurigged import registry
 
-from .fntools import find_fn
-from .session import Evaluator, current_session
+from .session import current_session
 from .utils import ReadOnly, format_libpath
 
 _here = os.path.dirname(__file__)

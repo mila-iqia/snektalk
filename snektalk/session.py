@@ -11,8 +11,7 @@ from itertools import count
 
 from hrepr import H, Tag, hrepr
 
-from .evaluator import Evaluator
-from .registry import UNAVAILABLE, callback_registry
+from .registry import callback_registry
 
 _c = count(1)
 

@@ -1,6 +1,6 @@
 from itertools import count
 
-from jurigged import make_recoder, registry
+from jurigged import make_recoder
 
 from .utils import Interactor, format_libpath, represents
 
