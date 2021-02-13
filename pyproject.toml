@@ -4,13 +4,13 @@ build-backend = "poetry.masonry.api"
 
 [tool.poetry]
 name = "snektalk"
-version = "0.0.1"
+version = "0.0.2"
 description = "Advanced Python REPL"
 authors = ["Olivier Breuleux <breuleux@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/breuleux/snektalk"
-include = ["assets/"]
+include = ["snektalk/assets/lib/**/*"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
