@@ -5,9 +5,11 @@ import random
 import socket
 import subprocess
 import sys
+import types
 
 import jurigged
 from hrepr import H
+from ovld import ovld
 from sanic import Sanic
 
 from .session import Evaluator, Session
@@ -41,30 +43,6 @@ def find_port(preferred_port, min_port, max_port):
     return candidate
 
 
-def define(glb=None):
-    app = Sanic("snektalk")
-    app.static("/", f"{assets_path}/index.html")
-    app.static("/lib/", f"{assets_path}/lib/")
-    app.static("/scripts/", f"{assets_path}/scripts/")
-    app.static("/style/", f"{assets_path}/style/")
-
-    @app.websocket("/sktk")
-    async def feed(request, ws):
-        sess = Session(glb or {}, ws)
-
-        while True:
-            command = json.loads(await ws.recv())
-            print("recv", command)
-            await sess.recv(**command)
-
-    return app
-
-
-def serve(glb=None):
-    app = define(glb)
-    app.run(host="0.0.0.0", port=6499)
-
-
 def status_logger(sess):
     def log(event):
         sess.queue(
@@ -74,8 +52,18 @@ def status_logger(sess):
     return log
 
 
-def run(func, watch_args=None):
+@ovld
+def run(func: types.FunctionType, **kwargs):
     module = sys.modules[func.__globals__["__name__"]]
+    return launch(module, func, **kwargs)
+
+
+@ovld
+def run(module: types.ModuleType, **kwargs):
+    return launch(module, None, **kwargs)
+
+
+def launch(module, func, watch_args=None):
     port = find_port(6499, min_port=6500, max_port=6600)
 
     app = Sanic("snektalk")
@@ -87,12 +75,12 @@ def run(func, watch_args=None):
     @app.websocket("/sktk")
     async def feed(request, ws):
         sess = Session(module, ws, Evaluator)
-        sess.schedule(sess.command_submit(expr=func))
+        if func:
+            sess.schedule(sess.command_submit(expr=func))
         if watch_args is not None:
             jurigged.watch(**watch_args, logger=status_logger(sess))
         while True:
             command = json.loads(await ws.recv())
-            print("recv", command)
             await sess.recv(**command)
 
     @app.listener("after_server_start")
