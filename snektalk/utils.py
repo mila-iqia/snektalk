@@ -175,13 +175,21 @@ class Interactor:
 
     @classmethod
     def __hrepr_resources__(cls, H):
+        js_requires = {
+            name: {"url": x, "varname": name} if isinstance(x, str) else x
+            for name, x in cls.js_requires.items()
+        }
+
         reqs = [
-            H.javascript(export=name, src=src)
-            for name, src in cls.js_requires.items()
+            H.javascript(export=name, src=data["url"])
+            for name, data in js_requires.items()
         ]
         if cls.js_code:
             main = H.javascript(
-                cls.js_code, require=list(cls.js_requires.keys())
+                cls.js_code,
+                require={
+                    name: data["varname"] for name, data in js_requires.items()
+                },
             )
         else:
             main = H.javascript(src=cls.js_source)
