@@ -1,21 +1,19 @@
+import importlib
 import os
 import runpy
 import sys
+from types import ModuleType
 
 from coleo import Option, default, run_cli
 from jurigged import registry
 from jurigged.utils import glob_filter
 
-from .repr import inject
-from .server import run  # serve
-from .session import current_session
+from .evaluator import Evaluator
+from .server import serve
 
 
 def main():
-    rval = run_cli(cli)
-    execute, watch_args = rval
-    inject()
-    run(execute, watch_args=watch_args)
+    run_cli(cli)
 
 
 def cli():
@@ -37,6 +35,8 @@ def cli():
         "pattern": pattern,
     }
 
+    sess = serve(watch_args=watch_args)
+
     if module:
         if script is not None:
             argv.insert(0, script)
@@ -44,18 +44,14 @@ def cli():
 
         if ":" in module:
             module, func = module.split(":", 1)
-            __import__(module, fromlist=[])
-
-            def execute():
-                mod = getattr(sys.modules[module], func)
-                mod()
-                current_session().set_globals(mod.__globals__)
+            mod = importlib.import_module(module)
+            call = getattr(mod, func)
+            call()
+            Evaluator(mod, vars(mod), {}, sess).loop()
 
         else:
-
-            def execute():
-                glb = runpy.run_module(module, run_name="__main__")
-                current_session().set_globals(glb)
+            glb = runpy.run_module(module, run_name="__main__")
+            Evaluator(None, glb, {}, sess).loop()
 
     elif script:
         path = os.path.abspath(script)
@@ -64,14 +60,9 @@ def cli():
             # module resolution
             registry.prepare("__main__", path)
         sys.argv[1:] = argv
-
-        def execute():
-            glb = runpy.run_path(path, run_name="__main__")
-            current_session().set_globals(glb)
+        glb = runpy.run_path(path, run_name="__main__")
+        Evaluator(None, glb, {}, sess).loop()
 
     else:
-
-        def execute():
-            current_session().set_globals({})
-
-    return execute, watch_args
+        mod = ModuleType("__main__")
+        Evaluator(mod, vars(mod), {}, sess).loop()

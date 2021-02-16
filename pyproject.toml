@@ -15,9 +15,9 @@ include = ["snektalk/assets/lib/**/*"]
 [tool.poetry.dependencies]
 python = "^3.8"
 coleo = "^0.2.1"
-hrepr = "^0.3.5"
+hrepr = "^0.3.9"
 sanic = "^20.9.1"
-jurigged = "^0.1.3"
+jurigged = "^0.1.5"
 
 [tool.poetry.dev-dependencies]
 black = "^19.3b0"

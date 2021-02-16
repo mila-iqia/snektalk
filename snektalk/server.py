@@ -4,14 +4,12 @@ import os
 import random
 import socket
 import subprocess
-import sys
-import types
+import threading
 
 import jurigged
-from ovld import ovld
 from sanic import Sanic
 
-from .evaluator import Evaluator
+from .repr import inject
 from .session import Session
 
 here = os.path.dirname(__file__)
@@ -52,18 +50,23 @@ def status_logger(sess):
     return log
 
 
-@ovld
-def run(func: types.FunctionType, **kwargs):
-    module = sys.modules[func.__globals__["__name__"]]
-    return launch(module, func, **kwargs)
+class SessionLock:
+    def __init__(self):
+        self.session = None
+        self.lock = threading.Lock()
+        self.lock.acquire()
+
+    def set(self, session):
+        self.session = session
+        self.lock.release()
+
+    def get(self):
+        self.lock.acquire()
+        self.lock.release()
+        return self.session
 
 
-@ovld
-def run(module: types.ModuleType, **kwargs):  # noqa: F811
-    return launch(module, None, **kwargs)
-
-
-def launch(module, func, watch_args=None):
+def _launch(slock, watch_args=None):
     port = find_port(6499, min_port=6500, max_port=6600)
 
     app = Sanic("snektalk")
@@ -74,9 +77,8 @@ def launch(module, func, watch_args=None):
 
     @app.websocket("/sktk")
     async def feed(request, ws):
-        sess = Session(module, ws, Evaluator)
-        if func:
-            sess.schedule(sess.command_submit(expr=func))
+        sess = Session(ws)
+        slock.set(sess)
         if watch_args is not None:
             jurigged.watch(**watch_args, logger=status_logger(sess))
         while True:
@@ -87,4 +89,19 @@ def launch(module, func, watch_args=None):
     async def launch_func(app, loop):
         subprocess.run(["open", f"http://localhost:{port}/"])
 
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, register_sys_signals=False)
+
+
+def serve(**kwargs):
+    slock = SessionLock()
+
+    def _start_server():
+        _launch(slock, **kwargs)
+
+    thread = threading.Thread(target=_start_server, daemon=False)
+    thread.start()
+
+    sess = slock.get()
+    sess.enter()
+    inject()
+    return sess

@@ -1,4 +1,5 @@
 import ast
+from types import ModuleType
 
 from hrepr import H
 from jurigged import CodeFile, registry
@@ -6,16 +7,23 @@ from jurigged.recode import virtual_file
 
 
 class Evaluator:
-    def __init__(self, session):
+    def __init__(self, module, glb, lcl, session):
         self.session = session
+        if module is None:
+            module = ModuleType("__main__")
+            module.__dict__.update(glb)
+        self.module = module
+        self.glb = glb
+        self.lcl = lcl
 
     def eval(self, expr, glb=None, lcl=None):
         if glb is None:
-            glb = self.session.glb
+            glb = self.glb
+        if lcl is None:
+            lcl = self.lcl
 
         filename = virtual_file("repl", expr)
         cf = CodeFile(filename=filename, source=expr)
-        cf.discover(self.session.module)
         registry.cache[filename] = cf
 
         tree = ast.parse(expr)
@@ -39,7 +47,8 @@ class Evaluator:
             rval = eval(compiled, glb, lcl)
         else:
             rval = None
-        cf.discover(self.session.module)
+
+        cf.discover(lcl, filename)
         return rval
 
     def run(self, thing, glb=None, lcl=None):

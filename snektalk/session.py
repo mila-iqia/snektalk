@@ -33,9 +33,7 @@ def new_evalid():
 
 
 class Session:
-    def __init__(self, module, socket, evaluator_class):
-        self.module = module
-        self.glb = vars(module)
+    def __init__(self, socket):
         self.blt = vars(builtins)
         self.idmap = {}
         self.varcount = count(1)
@@ -46,13 +44,16 @@ class Session:
         self.command_queue = deque()
         self.semaphore = threading.Semaphore(value=0)
         self.loop = asyncio.get_running_loop()
-        self.evaluator = evaluator_class(self)
-        self.thread = threading.Thread(target=self.evaluator.loop, daemon=True)
-        self.thread.start()
 
     #############
     # Utilities #
     #############
+
+    def enter(self):
+        self._token = _current_session.set(self)
+
+    def exit(self):
+        _current_session.reset(self._token)
 
     @contextmanager
     def set_context(self):

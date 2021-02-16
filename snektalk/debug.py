@@ -5,6 +5,7 @@ import re
 from hrepr import H
 from jurigged import registry
 
+from .evaluator import Evaluator
 from .session import current_session
 from .utils import ReadOnly, format_libpath
 
@@ -23,6 +24,7 @@ class SnekTalkDb(bdb.Bdb):
             {"filename": "", "content": "", "firstlineno": 1, "highlight": 1}
         )
         self.session.set_nav(self.nav)
+        self.evaluator = Evaluator(None, {}, {}, self.session)
         self.last_method = (lambda *_: None), None
 
     def user_line(self, frame):
@@ -91,7 +93,7 @@ class SnekTalkDb(bdb.Bdb):
 
         Print the value of the expression. Synonyms: !, pp
         """
-        self.session.evaluator.run(code, gs, ls)
+        self.evaluator.run(code, gs, ls)
 
     def command_step(self, arg, gs, ls):
         """<b>s(tep)</b>
