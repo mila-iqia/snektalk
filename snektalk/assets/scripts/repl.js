@@ -278,7 +278,7 @@ class Repl {
             let total = editor.getModel().getLineCount();
             this.multiline.set(
                 total > 1
-                || editor.getModel().getLineContent(1).match(/[\(\[\{:]$/)
+                || editor.getModel().getLineContent(1).match(/[\(\[\{:]$|^@/)
             )
         });
 
