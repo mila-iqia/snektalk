@@ -1,3 +1,4 @@
+import atexit
 import errno
 import json
 import os
@@ -89,6 +90,7 @@ def _launch(slock, watch_args=None):
     async def launch_func(app, loop):
         subprocess.run(["open", f"http://localhost:{port}/"])
 
+    atexit.register(app.stop)
     app.run(host="0.0.0.0", port=port, register_sys_signals=False)
 
 
@@ -98,7 +100,7 @@ def serve(**kwargs):
     def _start_server():
         _launch(slock, **kwargs)
 
-    thread = threading.Thread(target=_start_server, daemon=False)
+    thread = threading.Thread(target=_start_server, daemon=True)
     thread.start()
 
     sess = slock.get()
