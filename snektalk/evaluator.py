@@ -1,9 +1,26 @@
 import ast
+import functools
+import re
 from types import ModuleType
 
 from hrepr import H
 from jurigged import CodeFile, registry
 from jurigged.recode import virtual_file
+
+from .fntools import find_fn
+
+cmd_rx = re.compile(r"/([^ ]+)( .*)?")
+
+
+def safe_fail(fn):
+    @functools.wraps(fn)
+    def deco(self, *args, **kwargs):
+        try:
+            fn(self, *args, **kwargs)
+        except Exception as e:
+            self.session.schedule(self.session.send_result(e, type="exception"))
+
+    return deco
 
 
 class Evaluator:
@@ -51,30 +68,60 @@ class Evaluator:
         cf.discover(lcl, filename)
         return rval
 
-    def run(self, thing, glb=None, lcl=None):
-        if isinstance(thing, str):
-            self.session.schedule(
-                self.session.direct_send(command="echo", value=thing)
-            )
+    @safe_fail
+    def command_eval(self, expr, glb=None, lcl=None):
+        assert isinstance(expr, str)
 
-        try:
-            if isinstance(thing, str):
-                result = self.eval(thing, glb, lcl)
-            else:
-                result = thing()
-            typ = "statement" if result is None else "expression"
-        except Exception as e:
-            result = e
-            typ = "exception"
+        self.session.schedule(
+            self.session.direct_send(command="echo", value=expr)
+        )
+
+        result = self.eval(expr, glb, lcl)
+        typ = "statement" if result is None else "expression"
 
         self.session.blt["_"] = result
 
         self.session.schedule(self.session.send_result(result, type=typ))
+
+    @safe_fail
+    def command_edit(self, expr, glb, lcl):
+        expr = expr.lstrip()
+        obj = self.eval(expr, glb, lcl)
+        self.session.schedule(
+            self.session.send_result(find_fn(obj), type="expression")
+        )
+
+    def missing(self, expr, cmd, arg, glb, lcl):
+        self.session.schedule(
+            self.session.direct_send(command="echo", value=expr)
+        )
+        self.session.schedule(
+            self.session.send_result(
+                H.div(f"Command '{cmd}' does not exist"), type="exception"
+            )
+        )
+
+    def dispatch(self, expr, glb=None, lcl=None):
+        if match := cmd_rx.fullmatch(expr):
+            cmd, arg = match.groups()
+            if arg is None:
+                arg = ""
+        else:
+            cmd = "eval"
+            arg = expr
+
+        method = getattr(self, f"command_{cmd}", None)
+        if method is None:
+            self.missing(expr, cmd, arg, glb, lcl)
+        else:
+            method(arg, glb, lcl)
 
     def loop(self):
         while True:
             prompt = H.span["snek-input-mode-python"](">>>")
             with self.session.prompt(prompt) as cmd:
                 expr = cmd["expr"]
-                if not isinstance(expr, str) or expr.strip():
-                    self.run(expr)
+                if expr.strip():
+                    self.dispatch(expr)
+
+    run = command_eval

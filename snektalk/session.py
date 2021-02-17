@@ -129,15 +129,6 @@ class Session:
         self.semaphore.acquire()
         return self.command_queue.popleft()
 
-    ###############
-    # Initial run #
-    ###############
-
-    def run(self, thing):
-        with self.set_context():
-            with new_evalid():
-                self.evaluator.run(thing)
-
     ###########
     # Sending #
     ###########
