@@ -6,6 +6,7 @@ import random
 import socket
 import subprocess
 import threading
+import webbrowser
 
 import jurigged
 from sanic import Sanic
@@ -88,7 +89,7 @@ def _launch(slock, watch_args=None):
 
     @app.listener("after_server_start")
     async def launch_func(app, loop):
-        subprocess.run(["open", f"http://localhost:{port}/"])
+        webbrowser.open(f"http://localhost:{port}/")
 
     atexit.register(app.stop)
     app.run(host="0.0.0.0", port=port, register_sys_signals=False)
