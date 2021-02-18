@@ -1,4 +1,6 @@
 
+let isMac = /(Mac|iPhone|iPod|iPad)/i.test(window.navigator.platform);
+
 function activateScripts(node) {
     if (node.tagName === 'SCRIPT') {
         node.parentNode.replaceChild(reScript(node), node);
@@ -71,9 +73,10 @@ class Repl {
     }
 
     $globalKDEvent(evt) {
+        let cmdctrl = isMac ? (evt.metaKey && !evt.ctrlKey) : evt.ctrlKey;
+
         // Cmd+P => focus repl
-        if (evt.metaKey && !evt.altKey && !evt.ctrlKey
-            && evt.key === "p") {
+        if (cmdctrl && !evt.altKey && evt.key === "p") {
 
             evt.preventDefault();
             evt.stopPropagation();
@@ -81,8 +84,7 @@ class Repl {
             this.editor.focus();
         }
         // Cmd+B => navigate to next visible editor
-        else if (evt.metaKey && !evt.altKey && !evt.ctrlKey
-            && evt.key === "b") {
+        else if (cmdctrl && !evt.altKey && evt.key === "b") {
 
             evt.preventDefault();
             evt.stopPropagation();
