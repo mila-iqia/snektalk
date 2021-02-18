@@ -119,7 +119,10 @@ class SnekTalkHrepr(Hrepr):
             fr = curr.tb_frame
             code = fr.f_code
             hl = curr.tb_lineno - code.co_firstlineno
-            ed = find_fn(code, code_highlight=hl, max_height=19 * 7)
+            try:
+                ed = find_fn(code, code_highlight=hl, max_height=19 * 7)
+            except Exception as exc:
+                ed = None
             parts.append(
                 self.collapsible(
                     self.H.div["snek-title-row"](
