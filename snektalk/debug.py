@@ -31,11 +31,17 @@ class SnekTalkDb(bdb.Bdb):
         if frame.f_code.co_filename.startswith(_here):
             # Avoid running the debugger in snektalk code
             self.set_continue()
-            return
-        self.set_frame(frame)
+        elif self.step_now:
+            self.step_now = False
+            self.set_step()
+        else:
+            self.set_frame(frame)
 
     def show_frame(self, frame):
-        cf, defn = registry.find(frame.f_code)
+        try:
+            cf, defn = registry.find(frame.f_code)
+        except Exception as exc:
+            cf, defn = None, None
         if defn is None:
             self.nav.js.update(
                 f"'Could not find source code for {frame.f_code.co_name}'"
@@ -198,6 +204,14 @@ class SnekTalkDb(bdb.Bdb):
         self._user_requested_quit = True
         self.set_quit()
         self.proceed = True
+
+    def runeval_step(self, expr, glb, lcl):
+        self.step_now = True
+        return self.runeval(expr, glb, lcl)
+
+    def interaction(self, frame, tb):
+        self.reset()
+        self.set_frame(frame, tb)
 
     __commands__ = {
         "step": command_step,

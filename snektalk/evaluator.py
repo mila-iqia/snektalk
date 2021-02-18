@@ -1,6 +1,7 @@
 import ast
 import functools
 import re
+import sys
 from types import ModuleType
 
 from hrepr import H
@@ -18,6 +19,8 @@ def safe_fail(fn):
         try:
             fn(self, *args, **kwargs)
         except Exception as e:
+            self.session.blt["_"] = e
+            self.session.blt["$$exc_info"] = sys.exc_info()
             self.session.schedule(self.session.send_result(e, type="exception"))
 
     return deco
@@ -90,6 +93,40 @@ class Evaluator:
         self.session.schedule(
             self.session.send_result(find_fn(obj), type="expression")
         )
+
+    @safe_fail
+    def command_debug(self, expr, glb, lcl):
+        from .debug import SnekTalkDb
+
+        expr = expr.lstrip()
+        glb = glb or self.glb
+        lcl = lcl or self.lcl
+        if expr:
+            self.session.schedule(
+                self.session.direct_send(command="echo", value=f"/debug {expr}")
+            )
+            result = SnekTalkDb().runeval_step(expr, glb, lcl)
+            self.session.schedule(
+                self.session.send_result(result, type="expression")
+            )
+
+        else:
+            exc = self.session.blt.get("$$exc_info", None)
+            if exc:
+                self.session.schedule(
+                    self.session.direct_send(
+                        command="echo", value=f"Debugging {exc[0]}: {exc[1]}"
+                    )
+                )
+                tb = exc[2]
+                SnekTalkDb().interaction(tb.tb_frame, tb)
+            else:
+                self.session.schedule(
+                    self.session.send_result(
+                        H.div("Last expression was not an exception"),
+                        type="exception",
+                    )
+                )
 
     def missing(self, expr, cmd, arg, glb, lcl):
         self.session.schedule(
