@@ -74,12 +74,30 @@ class Evaluator:
     @safe_fail
     def command_eval(self, expr, glb=None, lcl=None):
         assert isinstance(expr, str)
+        expr = expr.lstrip()
 
         self.session.schedule(
             self.session.direct_send(command="echo", value=expr)
         )
 
         result = self.eval(expr, glb, lcl)
+        typ = "statement" if result is None else "expression"
+
+        self.session.blt["_"] = result
+
+        self.session.schedule(self.session.send_result(result, type=typ))
+
+    @safe_fail
+    def command_dir(self, expr, glb=None, lcl=None):
+        from .repr import hdir
+
+        expr = expr.lstrip()
+
+        self.session.schedule(
+            self.session.direct_send(command="echo", value=f"/dir {expr}")
+        )
+
+        result = hdir(self.eval(expr, glb, lcl))
         typ = "statement" if result is None else "expression"
 
         self.session.blt["_"] = result
@@ -143,6 +161,9 @@ class Evaluator:
             cmd, arg = match.groups()
             if arg is None:
                 arg = ""
+        elif expr.startswith("?"):
+            cmd = "dir"
+            arg = expr[1:]
         else:
             cmd = "eval"
             arg = expr
