@@ -93,6 +93,10 @@ class Repl {
             .filter(container => isElementInViewport(container))
             .map(container => container.$editor);
 
+            if (!evt.shiftKey) {
+                editors.reverse();
+            }
+
             let focused = null;
             for (let editor of editors) {
                 if (focused) {
