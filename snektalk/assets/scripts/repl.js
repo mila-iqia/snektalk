@@ -392,17 +392,17 @@ class Repl {
         return rval;
     }
 
-    read_only_editor(text) {
+    read_only_editor(text, language) {
         let elem = document.createElement("div");
         elem.style.width = this.pane.offsetWidth - 100;
 
         monaco.editor
-        .colorize(text, "python")
+        .colorize(text, language)
         .then(result => { elem.innerHTML = result; });
 
         return elem;
     }
-    
+
     send(message) {
         // Send a message back to SnekTalk
         if (this.closed) {
@@ -471,7 +471,7 @@ class Repl {
             }
         }
         else if (data.command == "echo") {
-            let ed = this.read_only_editor(data.value.trimEnd());
+            let ed = this.read_only_editor(data.value.trimEnd(), data.language || "python");
             let elem = document.createElement("div");
             elem.appendChild(ed);
             this.append(elem, "echo");

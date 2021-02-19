@@ -133,7 +133,9 @@ class Evaluator:
             if exc:
                 self.session.schedule(
                     self.session.direct_send(
-                        command="echo", value=f"Debugging {exc[0]}: {exc[1]}"
+                        command="echo",
+                        value=f"Debugging {exc[0].__qualname__}: {exc[1]}",
+                        language="text",
                     )
                 )
                 tb = exc[2]
