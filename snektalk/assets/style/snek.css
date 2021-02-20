@@ -148,6 +148,24 @@ body {
     margin-right: 10px;
 }
 
+.snek-gutter.snek-t-plain {
+    border-right: 5px solid transparent;
+    width: 20px;
+    margin-right: 10px;
+}
+
+.snek-line.snek-t-info {
+    background: #ffd;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.snek-gutter.snek-t-info {
+    border-right: 5px solid orange;
+    width: 20px;
+    margin-right: 10px;
+}
+
 .snek-gutter.snek-t-print {
     border-right: 5px solid transparent;
     width: 20px;
@@ -316,4 +334,9 @@ body {
 
 .hrepr-title .hrepr-defn-key {
     color: #ddd !important;
+}
+
+.snek-interpreter-in {
+    font-weight: bold;
+    color: purple;
 }

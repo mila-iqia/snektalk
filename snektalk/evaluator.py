@@ -2,6 +2,7 @@ import ast
 import functools
 import re
 import sys
+import time
 from types import ModuleType
 
 from hrepr import H
@@ -9,8 +10,13 @@ from jurigged import CodeFile, registry
 from jurigged.recode import virtual_file
 
 from .fntools import find_fn
+from .version import version
 
 cmd_rx = re.compile(r"/([^ ]+)( .*)?")
+
+
+class StopEvaluator(Exception):
+    pass
 
 
 def safe_fail(fn):
@@ -71,6 +77,15 @@ class Evaluator:
         cf.discover(lcl, filename)
         return rval
 
+    def format_modname(self):
+        modname = getattr(self.module, "__name__", "<module>")
+        return H.span["snek-interpreter-in"](modname)
+
+    shorthand = {
+        "q": "quit",
+        "d": "debug",
+    }
+
     @safe_fail
     def command_eval(self, expr, glb=None, lcl=None):
         assert isinstance(expr, str)
@@ -124,9 +139,8 @@ class Evaluator:
                 self.session.direct_send(command="echo", value=f"/debug {expr}")
             )
             result = SnekTalkDb().runeval_step(expr, glb, lcl)
-            self.session.schedule(
-                self.session.send_result(result, type="expression")
-            )
+            typ = "statement" if result is None else "expression"
+            self.session.schedule(self.session.send_result(result, type=typ))
 
         else:
             exc = self.session.blt.get("$$exc_info", None)
@@ -147,6 +161,20 @@ class Evaluator:
                         type="exception",
                     )
                 )
+
+    def command_quit(self, expr, glb, lcl):
+        self.session.schedule(
+            self.session.send_result(H.div("/quit"), type="echo",)
+        )
+        self.session.schedule(
+            self.session.send_result(
+                H.div("Quitting interpreter in ", self.format_modname()),
+                type="info",
+            )
+        )
+        # Small delay so that the messages get flushed
+        time.sleep(0.01)
+        raise StopEvaluator()
 
     def missing(self, expr, cmd, arg, glb, lcl):
         self.session.schedule(
@@ -170,6 +198,7 @@ class Evaluator:
             cmd = "eval"
             arg = expr
 
+        cmd = self.shorthand.get(cmd, cmd)
         method = getattr(self, f"command_{cmd}", None)
         if method is None:
             self.missing(expr, cmd, arg, glb, lcl)
@@ -177,11 +206,26 @@ class Evaluator:
             method(arg, glb, lcl)
 
     def loop(self):
-        while True:
-            prompt = H.span["snek-input-mode-python"](">>>")
-            with self.session.prompt(prompt) as cmd:
-                expr = cmd["expr"]
-                if expr.strip():
-                    self.dispatch(expr)
+        pyv = sys.version_info
+        self.session.schedule(
+            self.session.send_result(
+                H.div(
+                    "Starting interpreter in ",
+                    self.format_modname(),
+                    H.br(),
+                    f"Snektalk {version} using Python {pyv.major}.{pyv.minor}.{pyv.micro}",
+                ),
+                type="info",
+            )
+        )
+        try:
+            while True:
+                prompt = H.span["snek-input-mode-python"](">>>")
+                with self.session.prompt(prompt) as cmd:
+                    expr = cmd["expr"]
+                    if expr.strip():
+                        self.dispatch(expr)
+        except StopEvaluator:
+            return
 
     run = command_eval
