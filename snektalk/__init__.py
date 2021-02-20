@@ -7,6 +7,7 @@ from .repr import inject
 from .server import serve
 from .session import current_session
 from .utils import Interactor
+from .version import version
 
 
 def interact(**kwargs):
