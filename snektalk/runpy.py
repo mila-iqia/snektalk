@@ -24,31 +24,6 @@ __all__ = [
 ]
 
 
-class _TempModule(object):
-    """Temporarily replace a module in sys.modules with an empty namespace"""
-
-    def __init__(self, mod_name):
-        self.mod_name = mod_name
-        self.module = types.ModuleType(mod_name)
-        self._saved_module = []
-
-    def __enter__(self):
-        mod_name = self.mod_name
-        try:
-            self._saved_module.append(sys.modules[mod_name])
-        except KeyError:
-            pass
-        sys.modules[mod_name] = self.module
-        return self
-
-    def __exit__(self, *args):
-        if self._saved_module:
-            sys.modules[self.mod_name] = self._saved_module[0]
-        else:
-            del sys.modules[self.mod_name]
-        self._saved_module = []
-
-
 class _ModifiedArgv0(object):
     def __init__(self, value):
         self.value = value
@@ -111,8 +86,10 @@ def _run_module_code(
 ):
     """Helper to run code in new namespace with sys modified"""
     fname = script_name if mod_spec is None else mod_spec.origin
-    with _TempModule(mod_name) as temp_module, _ModifiedArgv0(fname):
-        mod_globals = temp_module.module.__dict__
+    temp_module = types.ModuleType(mod_name)
+    sys.modules[mod_name] = temp_module
+    with _ModifiedArgv0(fname):
+        mod_globals = temp_module.__dict__
         _run_code(
             code,
             mod_globals,
@@ -122,9 +99,7 @@ def _run_module_code(
             pkg_name,
             script_name,
         )
-    # Copy the globals of the temporary module, as they
-    # may be cleared when the temporary module goes away
-    return mod_globals.copy()
+    return temp_module
 
 
 # Helper to get the full name, spec and code for a module
@@ -315,29 +290,21 @@ def run_path(path_name, init_globals=None, run_name=None):
             # code. If we don't do this, a __loader__ attribute in the
             # existing __main__ module may prevent location of the new module.
             mod_name, mod_spec, code = _get_main_module_details()
-            with _TempModule(run_name) as temp_module, _ModifiedArgv0(
-                path_name
-            ):
-                mod_globals = temp_module.module.__dict__
-                return _run_code(
+            temp_module = types.ModuleType(run_name)
+            sys.modules[run_name] = temp_module
+            with _ModifiedArgv0(path_name):
+                mod_globals = temp_module.__dict__
+                _run_code(
                     code,
                     mod_globals,
                     init_globals,
                     run_name,
                     mod_spec,
                     pkg_name,
-                ).copy()
+                )
+                return temp_module
         finally:
             try:
                 sys.path.remove(path_name)
             except ValueError:
                 pass
-
-
-if __name__ == "__main__":
-    # Run the module specified as the next command line argument
-    if len(sys.argv) < 2:
-        print("No module specified for execution", file=sys.stderr)
-    else:
-        del sys.argv[0]  # Make the requested module sys.argv[0]
-        _run_module_as_main(sys.argv[0])

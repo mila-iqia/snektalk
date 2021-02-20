@@ -7,7 +7,7 @@ from coleo import Option, default, run_cli
 from jurigged import registry
 from jurigged.utils import glob_filter
 
-from . import runpy
+from . import runpy as snek_runpy
 from .evaluator import Evaluator
 from .server import serve
 
@@ -50,8 +50,8 @@ def cli():
             Evaluator(mod, vars(mod), {}, sess).loop()
 
         else:
-            glb = runpy.run_module(module, run_name="__main__")
-            Evaluator(None, glb, {}, sess).loop()
+            mod = snek_runpy.run_module(module, run_name="__main__")
+            Evaluator(mod, vars(mod), {}, sess).loop()
 
     elif script:
         path = os.path.abspath(script)
@@ -60,8 +60,8 @@ def cli():
             # module resolution
             registry.prepare("__main__", path)
         sys.argv[1:] = argv
-        glb = runpy.run_path(path, run_name="__main__")
-        Evaluator(None, glb, {}, sess).loop()
+        mod = snek_runpy.run_path(path, run_name="__main__")
+        Evaluator(mod, vars(mod), {}, sess).loop()
 
     else:
         mod = ModuleType("__main__")
