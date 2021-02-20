@@ -5,6 +5,7 @@ from .debug import SnekTalkDb
 from .evaluator import Evaluator
 from .repr import inject
 from .server import serve
+from .session import current_session
 from .utils import Interactor
 
 
@@ -12,10 +13,12 @@ def interact(**kwargs):
     glb = sys._getframe(1).f_globals
     module = importlib.import_module(glb["__name__"])
     lcl = sys._getframe(1).f_locals
-    sess = serve(**kwargs)
+    if not (sess := current_session()):
+        sess = serve(**kwargs)
     Evaluator(module, glb, lcl, sess).loop()
 
 
 def debug(**kwargs):
-    serve(**kwargs)
+    if not current_session():
+        serve(**kwargs)
     SnekTalkDb().set_trace()
