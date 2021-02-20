@@ -24,14 +24,20 @@ class PrintSequence(tuple):
         )
 
 
-def snekprint(*args, **kwargs):
+def snekprint(*args, toplevel=False, file=None, std=False, **kwargs):
     builtins.print = orig_print
     sess = current_session()
     if sess is None:
         orig_print(*args, **kwargs)
     else:
-        if all(isinstance(arg, str) for arg in args):
+        if std or file is not None:
+            print(*args, file=file, **kwargs)
+            builtins.print = snekprint
+            return
+        elif all(isinstance(arg, str) for arg in args):
             html = H.div["snek-print-str"](" ".join(args))
+        elif toplevel:
+            html = hrepr(*args, **kwargs)
         else:
             html = hrepr(PrintSequence(args), **kwargs)
         sess.queue(
