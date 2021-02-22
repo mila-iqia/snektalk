@@ -116,6 +116,8 @@ class Repl {
     }
 
     $globalClickEvent(evt) {
+        let cmdctrl = isMac ? (evt.metaKey && !evt.ctrlKey) : evt.ctrlKey;
+
         if (evt.detail === 2) {
             // Double-click
             return;
@@ -129,11 +131,11 @@ class Repl {
                 // Stop if non-default behavior or link
                 break;
             }
-            else if (evt.metaKey && target.getAttribute("pinnable") !== null) {
+            else if (cmdctrl && evt.altKey && !evt.shiftKey && target.getAttribute("pinnable") !== null) {
                 this.pin(target);
                 break;
             }
-            else if (!evt.metaKey && target.getAttribute("objid") !== null) {
+            else if (cmdctrl && !evt.altKey && !evt.shiftKey && target.getAttribute("objid") !== null) {
                 this.sktk(parseInt(target.getAttribute("objid")));
                 break;
             }
