@@ -54,11 +54,11 @@ def cli():
             mod = importlib.import_module(module)
             call = getattr(mod, func)
             call()
-            Evaluator(mod, vars(mod), {}, sess).loop()
+            Evaluator(mod, vars(mod), None, sess).loop()
 
         else:
             mod = snek_runpy.run_module(module, run_name="__main__")
-            Evaluator(mod, vars(mod), {}, sess).loop()
+            Evaluator(mod, vars(mod), None, sess).loop()
 
     elif script:
         path = os.path.abspath(script)
@@ -68,8 +68,8 @@ def cli():
             registry.prepare("__main__", path)
         sys.argv[1:] = argv
         mod = snek_runpy.run_path(path, run_name="__main__")
-        Evaluator(mod, vars(mod), {}, sess).loop()
+        Evaluator(mod, vars(mod), None, sess).loop()
 
     else:
         mod = ModuleType("__main__")
-        Evaluator(mod, vars(mod), {}, sess).loop()
+        Evaluator(mod, vars(mod), None, sess).loop()

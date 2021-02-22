@@ -46,7 +46,7 @@ class Evaluator:
         if glb is None:
             glb = self.glb
         if lcl is None:
-            lcl = self.lcl
+            lcl = self.lcl if self.lcl is not None else glb
 
         filename = virtual_file("repl", expr)
         cf = CodeFile(filename=filename, source=expr)
