@@ -32,6 +32,37 @@ def safe_fail(fn):
     return deco
 
 
+def evaluate(expr, glb, lcl):
+    filename = virtual_file("repl", expr)
+    cf = CodeFile(filename=filename, source=expr)
+    registry.cache[filename] = cf
+
+    tree = ast.parse(expr)
+    assert isinstance(tree, ast.Module)
+    assert len(tree.body) > 0
+    *body, last = tree.body
+    if isinstance(last, ast.Expr):
+        last = ast.Expression(last.value)
+    else:
+        body.append(last)
+        last = None
+    for stmt in body:
+        compiled = compile(
+            ast.Module(body=[stmt], type_ignores=[]),
+            mode="exec",
+            filename=filename,
+        )
+        exec(compiled, glb, lcl)
+    if last:
+        compiled = compile(last, mode="eval", filename=filename)
+        rval = eval(compiled, glb, lcl)
+    else:
+        rval = None
+
+    cf.discover(lcl, filename)
+    return rval
+
+
 class Evaluator:
     def __init__(self, module, glb, lcl, session):
         self.session = session
@@ -47,35 +78,7 @@ class Evaluator:
             glb = self.glb
         if lcl is None:
             lcl = self.lcl if self.lcl is not None else glb
-
-        filename = virtual_file("repl", expr)
-        cf = CodeFile(filename=filename, source=expr)
-        registry.cache[filename] = cf
-
-        tree = ast.parse(expr)
-        assert isinstance(tree, ast.Module)
-        assert len(tree.body) > 0
-        *body, last = tree.body
-        if isinstance(last, ast.Expr):
-            last = ast.Expression(last.value)
-        else:
-            body.append(last)
-            last = None
-        for stmt in body:
-            compiled = compile(
-                ast.Module(body=[stmt], type_ignores=[]),
-                mode="exec",
-                filename=filename,
-            )
-            exec(compiled, glb, lcl)
-        if last:
-            compiled = compile(last, mode="eval", filename=filename)
-            rval = eval(compiled, glb, lcl)
-        else:
-            rval = None
-
-        cf.discover(lcl, filename)
-        return rval
+        return evaluate(expr, glb, lcl)
 
     def format_modname(self):
         modname = getattr(self.module, "__name__", "<module>")
