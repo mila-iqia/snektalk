@@ -29,11 +29,18 @@ def cli():
     # [remainder]
     argv: Option
 
+    # Don't watch changes on the filesystem
+    # [options: --no-watch]
+    no_watch: Option & bool = default(False)
+
     pattern = glob_filter(".")
-    watch_args = {
-        "registry": registry,
-        "pattern": pattern,
-    }
+    if no_watch:
+        watch_args = None
+    else:
+        watch_args = {
+            "registry": registry,
+            "pattern": pattern,
+        }
 
     sess = serve(watch_args=watch_args)
 
