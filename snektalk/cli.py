@@ -43,33 +43,43 @@ def cli():
         }
 
     sess = serve(watch_args=watch_args)
+    mod = None
+    exc = None
 
-    if module:
-        if script is not None:
-            argv.insert(0, script)
-        sys.argv[1:] = argv
+    try:
+        if module:
+            if script is not None:
+                argv.insert(0, script)
+            sys.argv[1:] = argv
 
-        if ":" in module:
-            module, func = module.split(":", 1)
-            mod = importlib.import_module(module)
-            call = getattr(mod, func)
-            call()
-            Evaluator(mod, vars(mod), None, sess).loop()
+            if ":" in module:
+                module, func = module.split(":", 1)
+                mod = importlib.import_module(module)
+                call = getattr(mod, func)
+                call()
+
+            else:
+                mod = snek_runpy.run_module(module, run_name="__main__")
+
+        elif script:
+            path = os.path.abspath(script)
+            if pattern(path):
+                # It won't auto-trigger through runpy, probably some idiosyncracy of
+                # module resolution
+                registry.prepare("__main__", path)
+            sys.argv[1:] = argv
+            mod = snek_runpy.run_path(path, run_name="__main__")
 
         else:
-            mod = snek_runpy.run_module(module, run_name="__main__")
+            mod = ModuleType("__main__")
+
+    except Exception as exc:
+        if sess is not None:
+            sess.blt["$$exc_info"] = sys.exc_info()
+            sess.schedule(sess.send_result(exc, type="exception"))
+        else:
+            raise
+
+    finally:
+        if sess is not None and mod is not None:
             Evaluator(mod, vars(mod), None, sess).loop()
-
-    elif script:
-        path = os.path.abspath(script)
-        if pattern(path):
-            # It won't auto-trigger through runpy, probably some idiosyncracy of
-            # module resolution
-            registry.prepare("__main__", path)
-        sys.argv[1:] = argv
-        mod = snek_runpy.run_path(path, run_name="__main__")
-        Evaluator(mod, vars(mod), None, sess).loop()
-
-    else:
-        mod = ModuleType("__main__")
-        Evaluator(mod, vars(mod), None, sess).loop()
