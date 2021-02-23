@@ -131,6 +131,10 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
                 KM.WinCtrl | KM.Shift | KC.Enter,
                 this.command_commit_and_repl.bind(this)
             );
+            this.editor.addCommand(
+                KM.CtrlCmd | KC.KEY_R,
+                this.command_reset_to_saved.bind(this)
+            );
 
             if (this.options.highlight !== null) {
                 var hl = this.editor.deltaDecorations([], [
@@ -190,6 +194,11 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
             if (await this.save(true)) {
                 repl.mainRepl.editor.focus();
             }
+        }
+
+        async command_reset_to_saved() {
+            this.editor.setValue(this.content.saved);
+            this.inferStatus();
         }
 
     }
