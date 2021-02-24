@@ -12,14 +12,15 @@ from .version import version
 
 def interact(**kwargs):
     glb = sys._getframe(1).f_globals
-    module = importlib.import_module(glb["__name__"])
+    mname = glb["__name__"]
+    module = importlib.import_module(mname)
     lcl = sys._getframe(1).f_locals
     if not (sess := current_session()):
-        sess = serve(**kwargs)
+        sess = serve(**kwargs, template={"title": mname})
     Evaluator(module, glb, lcl, sess).loop()
 
 
 def debug(**kwargs):
     if not current_session():
-        serve(**kwargs)
+        serve(**kwargs, template={"title": "debug"})
     SnekTalkDb().set_trace()

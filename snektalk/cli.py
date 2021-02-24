@@ -42,7 +42,10 @@ def cli():
             "pattern": pattern,
         }
 
-    sess = serve(watch_args=watch_args)
+    sess = serve(
+        watch_args=watch_args,
+        template={"title": module or script or "snektalk"},
+    )
     mod = None
     exc = None
 

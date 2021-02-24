@@ -3,13 +3,14 @@ import errno
 import json
 import os
 import random
+import re
 import socket
 import subprocess
 import threading
 import webbrowser
 
 import jurigged
-from sanic import Sanic
+from sanic import Sanic, response
 
 from .repr import inject
 from .session import Session
@@ -68,14 +69,21 @@ class SessionLock:
         return self.session
 
 
-def _launch(slock, watch_args=None):
+def _launch(slock, watch_args=None, template={}):
     port = find_port(6499, min_port=6500, max_port=6600)
 
     app = Sanic("snektalk")
-    app.static("/", f"{assets_path}/index.html")
     app.static("/lib/", f"{assets_path}/lib/")
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
+
+    @app.route("/")
+    async def index(request):
+        index = open(os.path.join(assets_path, "index.html")).read()
+        index = re.sub(
+            r"{{([^{}]+)}}", lambda m: template.get(m[1], f"!!{m[1]}"), index
+        )
+        return response.html(index)
 
     @app.websocket("/sktk")
     async def feed(request, ws):
