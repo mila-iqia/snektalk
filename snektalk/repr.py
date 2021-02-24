@@ -1,4 +1,5 @@
 import builtins
+import os
 import types
 from types import FunctionType, MethodType, ModuleType
 
@@ -14,6 +15,7 @@ from .utils import format_libpath, join, represents, sktk_hjson
 ##################
 
 
+here = os.path.dirname(__file__)
 orig_print = print
 
 
@@ -119,11 +121,22 @@ class SnekTalkHrepr(Hrepr):
             return exc_proper
 
         tb = exc.__traceback__
+        skipping = not self.config.include_snektalk_frames
         parts = []
         curr = tb
         while curr:
             fr = curr.tb_frame
             code = fr.f_code
+            filename = code.co_filename
+            if filename.startswith(here) and skipping:
+                curr = curr.tb_next
+                continue
+            skipping = False
+            if filename.startswith(os.getcwd()) or filename.startswith("<"):
+                importance_class = "snek-exception-local"
+            else:
+                importance_class = "snek-exception-lib"
+
             hl = curr.tb_lineno - code.co_firstlineno
             try:
                 ed = find_fn(code, code_highlight=hl, max_height=19 * 7)
@@ -131,10 +144,10 @@ class SnekTalkHrepr(Hrepr):
                 ed = None
             parts.append(
                 self.collapsible(
-                    self.H.div["snek-title-row"](
+                    self.H.div["snek-title-row", importance_class](
                         self.H.span(code.co_name),
                         self.H.span(
-                            f"{format_libpath(code.co_filename)}:{fr.f_lineno}"
+                            f"{format_libpath(filename)}:{fr.f_lineno}"
                         ),
                     ),
                     self(ed)

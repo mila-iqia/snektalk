@@ -228,6 +228,10 @@ body {
     flex-grow: 1;
 }
 
+.snek-title-row.snek-exception-lib {
+    color: #888;
+}
+
 .hrepr-error {
     width: 100%;
     box-sizing: border-box;
