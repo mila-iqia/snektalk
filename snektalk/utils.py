@@ -62,12 +62,22 @@ def format_libpath(path):
 ###########################
 
 
-def _default_click(obj, evt):
+def pastevar(obj):
     sess = current_session()
+    sess.queue(command="pastevar", value=sess.getvar(obj))
+
+
+def pastecode(code):
+    sess = current_session()
+    sess.queue(command="pastevar", value=code)
+
+
+def _default_click(obj, evt):
     if evt.get("shiftKey", False):
+        sess = current_session()
         sess.queue(command="result", value=hrepr(obj), type="print")
     else:
-        sess.queue(command="pastevar", value=sess.getvar(obj))
+        pastevar(obj)
 
 
 def _safe_set(elem, **props):

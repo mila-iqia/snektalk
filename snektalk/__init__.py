@@ -6,7 +6,7 @@ from .evaluator import Evaluator
 from .repr import inject
 from .server import serve
 from .session import current_session
-from .utils import Interactor
+from .utils import Interactor, pastecode, pastevar
 from .version import version
 
 
