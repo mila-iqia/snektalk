@@ -5,11 +5,12 @@
         <meta http-equiv="Content-type" content="text/html" charset="UTF-8" />
         <link rel="stylesheet" href="/style/snek.css">
         <script type="text/javascript" src="/lib/require.min.js"></script>
+        <script type="text/javascript" src="/lib/split.min.js"></script>
     </head>
     <body>
         <div id="main">
-            <div class="snek-pin-pane"></div>
-            <div class="snek-interactor">
+            <div id="snek-pin-pane-left" class="snek-pin-pane"></div>
+            <div id="snek-interactor" class="snek-interactor">
                 <div class="snek-outer-pane">
                     <div class="snek-pane"></div>
                 </div>
@@ -22,8 +23,19 @@
                 <div class="snek-status-bar">
                 </div>
             </div>
+            <div id="snek-pin-pane-right" class="snek-pin-pane"></div>
         </div>
         <script>
+            // Set up split screen
+            let spl = Split(["#snek-pin-pane-left", "#snek-interactor", "#snek-pin-pane-right"], {
+                gutterSize: 8,
+                cursor: "col-resize",
+                minSize: [0, 500, 0],
+            });
+            let pct = Math.min(800 / window.innerWidth * 100, 90);
+            let rem = (100 - pct) / 2;
+            spl.setSizes([rem, pct, rem]);
+
             require(["scripts/repl"], repl => {
                 let the_repl = new repl.Repl(document.getElementById("main"));
                 the_repl.connect();

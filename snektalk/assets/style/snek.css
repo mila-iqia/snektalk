@@ -9,17 +9,38 @@ body {
 }
 
 #main {
-    display: flex;
-    flex-direction: row;
+    height: 100%;
+}
+
+#main > * {
+    float: left;
+}
+
+/* 
+.gutter.gutter-horizontal:before {
+    position: relative;
+    top: 50%;
+    left: -2px;
+    color: #ddd;
+    content: "◆";
+    text-align: center;
+} */
+
+.gutter.gutter-horizontal:hover {
+    transition: background-color 0.5s ease;
+    background: #f0f0f0;
+}
+
+.gutter.gutter-horizontal {
+    transition: background-color 0.5s ease;
+    cursor: col-resize;
     height: 100%;
 }
 
 .snek-interactor {
-    width: 800px;
     display: flex;
     flex-direction: column;
     height: 100%;
-    margin: auto;
 }
 
 .snek-outer-pane {
@@ -37,18 +58,14 @@ body {
     display: flex;
     flex-direction: column;
     padding: 5px;
-    border-right: 3px solid #999;
+    box-sizing: border-box;
     overflow: scroll;
+    height: 100%;
 }
 
 .snek-pin-pane > div {
     padding: 5px;
 }
-
-.snek-pin-pane:empty {
-    display: none;
-}
-
 
 .snek-input-box {
     display: flex;
