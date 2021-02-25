@@ -380,6 +380,8 @@ class Repl {
             folding: false,
             renderLineHighlight: "none",
             lineDecorationsWidth: 0,
+            suggestOnTriggerCharacters: false,
+            wordBasedSuggestions: false,
         });
         this.editor = editor;
         target.classList.add("snek-editor-cyclable");
