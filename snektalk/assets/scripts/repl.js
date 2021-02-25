@@ -54,7 +54,7 @@ class FuzzySearchResults {
         this.element = element;
         this.entries = entries;
         this.structured_results = null;
-        this.cursor = 0;
+        this.cursors = [0];
         element.className = "snek-fuzzy-search";
         this.results = document.createElement("div");
         this.results.className = "snek-fuzzy-search-results";
@@ -62,14 +62,15 @@ class FuzzySearchResults {
     }
 
     get() {
-        const result = this.structured_results[this.cursor];
-        if (result === undefined) {
-            return null;
+        let ret = [];
+        for (let cursor of this.cursors) {
+            const result = this.structured_results[cursor];
+            if (result !== undefined) {
+                const entry = result.item;
+                ret.unshift(this.entries[entry]);
+            }
         }
-        else {
-            const entry = result.item;
-            return this.entries[entry];
-        }
+        return ret.join("\n") || null;
     }
 
     showResults(results) {
@@ -83,19 +84,47 @@ class FuzzySearchResults {
             this.results.innerHTML = "No matches";
         }
         this.structured_results = results;
-        this.setCursor(this.cursor);
     }
 
-    setCursor(value) {
-        const n = this.results.children.length;
+    updateCursors(new_cursors) {
+        const n = this.structured_results.length;
         if (n === 0) {
             return;
         }
-        if (this.cursor >= 0 && this.cursor < n) {
-            this.results.children[this.cursor].classList.remove("snek-fuzzy-cursor");
+        for (let cursor of this.cursors) {
+            if (new_cursors.indexOf(cursor) === -1) {
+                this.results.children[cursor].classList.remove("snek-fuzzy-cursor");
+            }
         }
-        this.cursor = (value + n) % n;
-        this.results.children[this.cursor].classList.add("snek-fuzzy-cursor");
+        for (let cursor of new_cursors) {
+            this.results.children[cursor].classList.add("snek-fuzzy-cursor");
+        }
+        this.cursors = new_cursors;
+    }
+
+    setCursor(value) {
+        let new_cursors = [value];
+        this.updateCursors(new_cursors);
+    }
+
+    addCursor(value) {
+        let new_cursors = this.cursors.slice(0);
+        new_cursors.push(value);
+        new_cursors.sort();
+        this.updateCursors(new_cursors);
+    }
+
+    expandUp() {
+        const x = this.cursors.length - 1;
+        if (this.cursors.length && this.cursors[x] < this.structured_results.length - 1) {
+            this.addCursor(this.cursors[x] + 1);
+        }
+    }
+
+    expandDown() {
+        if (this.cursors.length && this.cursors[0] > 0) {
+            this.addCursor(this.cursors[0] - 1);
+        }
     }
 }
 
@@ -392,7 +421,8 @@ class Repl {
                 const selection = this.historyPopup.get();
                 if (selection) {
                     this.editor.setValue(selection);
-                    this.editor.setPosition({lineNumber: 1, column: 1000000});
+                    let nlines = this.editor.getModel().getLineCount();
+                    this.editor.setPosition({lineNumber: nlines, column: 1000000});
                 }
                 this.destroyHistoryPopup();
             },
@@ -401,9 +431,7 @@ class Repl {
 
         editor.addCommand(
             KC.Escape,
-            () => {
-                this.destroyHistoryPopup();
-            },
+            () => this.destroyHistoryPopup(),
             "popupActive"
         );
 
@@ -432,6 +460,18 @@ class Repl {
             KC.DownArrow,
             () => { this.historyShift(1); },
             "atEnd"
+        );
+
+        editor.addCommand(
+            KM.Shift | KC.UpArrow,
+            () => { this.historyPopup.expandUp(); },
+            "popupActive"
+        );
+
+        editor.addCommand(
+            KM.Shift | KC.DownArrow,
+            () => { this.historyPopup.expandDown(); },
+            "popupActive"
         );
 
         this.editor = editor;
