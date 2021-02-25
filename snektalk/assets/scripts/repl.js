@@ -49,74 +49,27 @@ let mainRepl = null;
 let evalIdGen = 0;
 
 
-class FuzzySearch {
-    constructor(element, entries, initial, callback) {
+class FuzzySearchResults {
+    constructor(element, entries) {
         this.element = element;
         this.entries = entries;
         this.structured_results = null;
-        this.callback = callback;
         this.cursor = 0;
-
-        const options = {
-            includeScore: true,
-            includeMatches: true,
-        };
-        this.fuse = new Fuse(this.entries, options);
         element.className = "snek-fuzzy-search";
-
         this.results = document.createElement("div");
         this.results.className = "snek-fuzzy-search-results";
         element.appendChild(this.results);
-        
-        this.input = document.createElement("input");
-        this.input.className = "snek-fuzzy-search-input";
-        element.appendChild(this.input);
-
-        this.input.onblur = evt => {
-            console.log("blur");
-            this.element.remove();
-        }
-
-        this.input.onkeydown = evt => {
-            const key = evt.keyCode || evt.which;
-            console.log(key);
-            if (key == 13) {
-                const result = this.structured_results[this.cursor];
-                if (result === undefined) {
-                    this.callback(null);
-                }
-                else {
-                    const entry = result.item;
-                    this.callback(this.entries[entry]);
-                }
-                evt.preventDefault();
-            }
-            else if (key == 27) {
-                this.callback(null);
-                evt.preventDefault();
-            }
-            else if(key == 38) {
-                this.navigate(1);
-                evt.preventDefault();
-            }
-            else if(key == 40) {
-                this.navigate(-1);
-                evt.preventDefault();
-            }
-            else {
-                console.log("???");
-                setTimeout(() => {
-                    console.log(this.input);
-                    this.search(this.input.value);
-                }, 0);
-            }
-        }
-
-        this.search(initial);
     }
 
-    focus() {
-        this.input.focus();
+    get() {
+        const result = this.structured_results[this.cursor];
+        if (result === undefined) {
+            return null;
+        }
+        else {
+            const entry = result.item;
+            return this.entries[entry];
+        }
     }
 
     showResults(results) {
@@ -126,12 +79,16 @@ class FuzzySearch {
             row.innerText = this.entries[result.item];
             this.results.appendChild(row);
         }
+        if (!this.results.children.length) {
+            this.results.innerHTML = "No matches";
+        }
+        this.structured_results = results;
         this.setCursor(this.cursor);
     }
 
     setCursor(value) {
         const n = this.results.children.length;
-        if (n == 0) {
+        if (n === 0) {
             return;
         }
         if (this.cursor >= 0 && this.cursor < n) {
@@ -139,22 +96,6 @@ class FuzzySearch {
         }
         this.cursor = (value + n) % n;
         this.results.children[this.cursor].classList.add("snek-fuzzy-cursor");
-    }
-
-    search(s) {
-        var results = null;
-        if (!s) {
-            results = this.entries.map((elem, idx) => ({item: idx}));
-        }
-        else {
-            results = this.fuse.search(s);
-        }
-        this.structured_results = results;
-        this.showResults(results);
-    }
-
-    navigate(delta) {
-        this.setCursor(this.cursor + delta);
     }
 }
 
@@ -179,6 +120,7 @@ class Repl {
         this.filteredHistory = [""];
         this.history = [""];
         this.expectedContent = null;
+        this.historyPopup = null;
 
         target.onclick = this.$globalClickEvent.bind(this);
         window.onkeydown = this.$globalKDEvent.bind(this);
@@ -388,6 +330,7 @@ class Repl {
         target.$editor = this.editor;
         this.editor.onDidContentSizeChange(this.event_updateHeight.bind(this));
 
+        this.popupActive = this.editor.createContextKey("popupActive", false);
         this.atBeginning = this.editor.createContextKey("atBeginning", true);
         this.atEnd = this.editor.createContextKey("atEnd", true);
         this.multiline = this.editor.createContextKey("multiline", false);
@@ -406,7 +349,10 @@ class Repl {
                 total > 1
                 || editor.getModel().getLineContent(1).match(/[\(\[\{:]$|^@/)
             )
-            if (this.expectedContent !== null
+            if (this.historyPopup) {
+                this.setupFilter();
+            }
+            else if (this.expectedContent !== null
                 && this.editor.getValue() !== this.expectedContent) {
                     this.filter = null;
                     this.expectedContent = null;
@@ -420,7 +366,7 @@ class Repl {
                 command: "submit",
                 expr: val,
             });
-            if (this.history[1] !== val) {
+            if (this.history[1] !== val && val !== "") {
                 this.history[0] = val;
                 this.history.unshift("");
             }
@@ -428,7 +374,7 @@ class Repl {
                 this.history[0] = "";
             }
             this.filter = null;
-            this.historySelection = 0;
+            this.destroyHistoryPopup();
             // The flex-direction on the outer pane is reversed, so
             // 0 scrolls it to the bottom. Handy.
             this.outerPane.scrollTop = 0;
@@ -437,7 +383,28 @@ class Repl {
         editor.addCommand(
             KC.Enter,
             _submit,
-            "!multiline"
+            "!multiline && !popupActive"
+        );
+
+        editor.addCommand(
+            KC.Enter,
+            () => {
+                const selection = this.historyPopup.get();
+                if (selection) {
+                    this.editor.setValue(selection);
+                    this.editor.setPosition({lineNumber: 1, column: 1000000});
+                }
+                this.destroyHistoryPopup();
+            },
+            "popupActive"
+        );
+
+        editor.addCommand(
+            KC.Escape,
+            () => {
+                this.destroyHistoryPopup();
+            },
+            "popupActive"
         );
 
         editor.addCommand(
@@ -452,24 +419,7 @@ class Repl {
 
         editor.addCommand(
             KM.WinCtrl | KC.KEY_R,
-            () => {
-                const el = document.createElement("div");
-                const fuzz = new FuzzySearch(
-                    el,
-                    this.history.slice(1),
-                    this.editor.getValue(),
-                    result => {
-                        if (result !== null) {
-                            this.editor.setValue(result);
-                        }
-                        this.editor.focus();
-                        this.editor.setPosition({lineNumber: 1, column: 1000000});
-                    }
-                );
-                el.style.width = this.inputBox.offsetWidth - 20;
-                this.inputOuter.insertBefore(el, this.inputMode);
-                fuzz.focus();
-            }
+            () => this.setupHistoryPopup()
         );
 
         editor.addCommand(
@@ -487,11 +437,34 @@ class Repl {
         this.editor = editor;
     }
 
+    setupHistoryPopup() {
+        const el = document.createElement("div");
+        const fuzz = new FuzzySearchResults(
+            el,
+            this.history.slice(1),
+        );
+        this.inputOuter.insertBefore(el, this.inputMode);
+        this.historyPopup = fuzz;
+        this.popupActive.set(true);
+        this.setupFilter();
+    }
+
+    destroyHistoryPopup() {
+        if (this.historyPopup !== null) {
+            this.historyPopup.element.remove();
+            this.historyPopup = null;
+            this.popupActive.set(false);
+            this.filter = null;
+        }
+    }
+
     setupFilter() {
+        const popup = this.historyPopup !== null;
         this.filter = this.editor.getValue();
         this.history[0] = this.filter;
+        const histo = popup ? this.history.slice(1) : this.history;
         if (!this.filter) {
-            this.filteredHistory = this.history.map(
+            this.filteredHistory = histo.map(
                 (elem, idx) => ({item: idx})
             );
         }
@@ -500,10 +473,14 @@ class Repl {
                 includeScore: true,
                 includeMatches: true,
             };
-            const fuse = new Fuse(this.history, options);
+            const fuse = new Fuse(histo, options);
             this.filteredHistory = fuse.search(this.filter);
         }
         this.historySelection = 0;
+        if (popup) {
+            this.historyPopup.showResults(this.filteredHistory);
+            this.historyPopup.setCursor(0);
+        }
     }
 
     historyShift(delta) {
@@ -521,17 +498,23 @@ class Repl {
 
         this.historySelection = new_sel;
         let item = this.filteredHistory[new_sel].item;
-        let text = this.history[item];
 
-        this.expectedContent = text;
-        this.editor.setValue(text);
-
-        if (delta < 0) {
-            let nlines = this.editor.getModel().getLineCount();
-            this.editor.setPosition({lineNumber: nlines, column: 1000000});
+        if (this.historyPopup !== null) {
+            this.historyPopup.setCursor(new_sel);
         }
         else {
-            this.editor.setPosition({lineNumber: 1, column: 1000000});
+            let text = this.history[item];
+
+            this.expectedContent = text;
+            this.editor.setValue(text);
+
+            if (delta < 0) {
+                let nlines = this.editor.getModel().getLineCount();
+                this.editor.setPosition({lineNumber: nlines, column: 1000000});
+            }
+            else {
+                this.editor.setPosition({lineNumber: 1, column: 1000000});
+            }
         }
     }
 
