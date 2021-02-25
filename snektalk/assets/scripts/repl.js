@@ -173,7 +173,7 @@ class Repl {
         this.statusBar = target.querySelector(".snek-status-bar");
         this.nav = target.querySelector(".snek-nav");
         this._setupEditor(this.inputBox);
-        this.historyRange = [0, 0];
+        this.historySelection = 0;
         this.history = [""];
         target.onclick = this.$globalClickEvent.bind(this);
         window.onkeydown = this.$globalKDEvent.bind(this);
@@ -415,7 +415,7 @@ class Repl {
             else {
                 this.history[0] = "";
             }
-            this.historyRange = [0, 0];
+            this.historySelection = 0;
             // The flex-direction on the outer pane is reversed, so
             // 0 scrolls it to the bottom. Handy.
             this.outerPane.scrollTop = 0;
@@ -459,16 +459,6 @@ class Repl {
             }
         );
 
-        // editor.addCommand(
-        //     KM.Alt | KC.UpArrow,
-        //     () => { this.historyShift(-1, true); },
-        // );
-
-        // editor.addCommand(
-        //     KM.Alt | KC.DownArrow,
-        //     () => { this.historyShift(1, true); },
-        // );
-
         editor.addCommand(
             KC.UpArrow,
             () => { this.historyShift(-1); },
@@ -484,30 +474,20 @@ class Repl {
         this.editor = editor;
     }
 
-    historyShift(delta, agglutinate) {
-        let [htop, hbot] = this.historyRange;
-        if (hbot === 0) {
+    historyShift(delta) {
+        let sel = this.historySelection;
+        if (sel === 0) {
             this.history[0] = this.editor.getValue();
         }
         let n = this.history.length;
+        let new_sel = Math.max(0, Math.min(n - 1, sel - delta));
 
-        let new_htop = 0;
-        let new_hbot = 0;
-        if (delta < 0) {
-            new_htop = Math.max(0, Math.min(n - 1, htop - delta));
-            new_hbot = agglutinate ? hbot : new_htop;
-        }
-        else {
-            new_hbot = Math.max(0, Math.min(n - 1, hbot - delta));
-            new_htop = agglutinate ? htop : new_hbot;
-        }
-
-        if (new_hbot == hbot && new_htop == htop) {
+        if (new_sel == sel) {
             return;
         }
 
-        this.historyRange = [new_htop, new_hbot];
-        let text = this.history.slice(new_hbot, new_htop + 1).reverse().join("\n");
+        this.historySelection = new_sel;
+        let text = this.history[new_sel];
 
         this.editor.setValue(text);
 
