@@ -9,22 +9,10 @@ body {
 }
 
 #main {
+    display: grid;
+    grid-template-columns: 1fr 10px 800px 10px 1fr;
     height: 100%;
 }
-
-#main > * {
-    float: left;
-}
-
-/* 
-.gutter.gutter-horizontal:before {
-    position: relative;
-    top: 50%;
-    left: -2px;
-    color: #ddd;
-    content: "◆";
-    text-align: center;
-} */
 
 .gutter.gutter-horizontal:hover {
     transition: background-color 0.5s ease;
@@ -41,6 +29,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    overflow: scroll;
 }
 
 .snek-outer-pane {
