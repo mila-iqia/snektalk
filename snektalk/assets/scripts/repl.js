@@ -40,13 +40,123 @@ function isElementInViewport(el) {
 }
 
 require.config({ paths: { 'vs': '/lib/vs' }});
-define(["vs/editor/editor.main"], (monaco) => {
+define(["vs/editor/editor.main", "Fuse"], (monaco, Fuse) => {
 
 const KM = monaco.KeyMod;
 const KC = monaco.KeyCode;
 
 let mainRepl = null;
 let evalIdGen = 0;
+
+
+class FuzzySearch {
+    constructor(element, entries, initial, callback) {
+        this.element = element;
+        this.entries = entries;
+        this.structured_results = null;
+        this.callback = callback;
+        this.cursor = 0;
+
+        const options = {
+            includeScore: true,
+            includeMatches: true,
+        };
+        this.fuse = new Fuse(this.entries, options);
+        element.className = "snek-fuzzy-search";
+
+        this.results = document.createElement("div");
+        this.results.className = "snek-fuzzy-search-results";
+        element.appendChild(this.results);
+        
+        this.input = document.createElement("input");
+        this.input.className = "snek-fuzzy-search-input";
+        element.appendChild(this.input);
+
+        this.input.onblur = evt => {
+            console.log("blur");
+            this.element.remove();
+        }
+
+        this.input.onkeydown = evt => {
+            const key = evt.keyCode || evt.which;
+            console.log(key);
+            if (key == 13) {
+                const result = this.structured_results[this.cursor];
+                if (result === undefined) {
+                    this.callback(null);
+                }
+                else {
+                    const entry = result.item;
+                    this.callback(this.entries[entry]);
+                }
+                evt.preventDefault();
+            }
+            else if (key == 27) {
+                this.callback(null);
+                evt.preventDefault();
+            }
+            else if(key == 38) {
+                this.navigate(1);
+                evt.preventDefault();
+            }
+            else if(key == 40) {
+                this.navigate(-1);
+                evt.preventDefault();
+            }
+            else {
+                console.log("???");
+                setTimeout(() => {
+                    console.log(this.input);
+                    this.search(this.input.value);
+                }, 0);
+            }
+        }
+
+        this.search(initial);
+    }
+
+    focus() {
+        this.input.focus();
+    }
+
+    showResults(results) {
+        this.results.innerHTML = "";
+        for (const result of results) {
+            const row = document.createElement("div");
+            row.innerText = this.entries[result.item];
+            this.results.appendChild(row);
+        }
+        this.setCursor(this.cursor);
+    }
+
+    setCursor(value) {
+        const n = this.results.children.length;
+        if (n == 0) {
+            return;
+        }
+        if (this.cursor >= 0 && this.cursor < n) {
+            this.results.children[this.cursor].classList.remove("snek-fuzzy-cursor");
+        }
+        this.cursor = (value + n) % n;
+        this.results.children[this.cursor].classList.add("snek-fuzzy-cursor");
+    }
+
+    search(s) {
+        var results = null;
+        if (!s) {
+            results = this.entries.map((elem, idx) => ({item: idx}));
+        }
+        else {
+            results = this.fuse.search(s);
+        }
+        this.structured_results = results;
+        this.showResults(results);
+    }
+
+    navigate(delta) {
+        this.setCursor(this.cursor + delta);
+    }
+}
 
 
 class Repl {
@@ -57,6 +167,7 @@ class Repl {
         this.pane = target.querySelector(".snek-pane");
         this.outerPane = target.querySelector(".snek-outer-pane");
         this.pinpane = target.querySelector(".snek-pin-pane");
+        this.inputOuter = target.querySelector(".snek-input-box");
         this.inputBox = target.querySelector(".snek-input");
         this.inputMode = target.querySelector(".snek-input-mode");
         this.statusBar = target.querySelector(".snek-status-bar");
@@ -324,6 +435,28 @@ class Repl {
         editor.addCommand(
             KM.WinCtrl | KC.KEY_L,
             () => { this.pane.innerHTML = ""; }
+        );
+
+        editor.addCommand(
+            KM.WinCtrl | KC.KEY_R,
+            () => {
+                const el = document.createElement("div");
+                const fuzz = new FuzzySearch(
+                    el,
+                    this.history.slice(1),
+                    this.editor.getValue(),
+                    result => {
+                        if (result !== null) {
+                            this.editor.setValue(result);
+                        }
+                        this.editor.focus();
+                        this.editor.setPosition({lineNumber: 1, column: 1000000});
+                    }
+                );
+                el.style.width = this.inputBox.offsetWidth - 20;
+                this.inputOuter.insertBefore(el, this.inputMode);
+                fuzz.focus();
+            }
         );
 
         // editor.addCommand(

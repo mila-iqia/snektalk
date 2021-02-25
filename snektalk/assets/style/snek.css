@@ -68,6 +68,7 @@ body {
 }
 
 .snek-input-box {
+    position: relative;
     display: flex;
     flex-direction: row;
     padding: 5px;
@@ -360,4 +361,41 @@ body {
 .snek-interpreter-in {
     font-weight: bold;
     color: purple;
+}
+
+
+.snek-fuzzy-search {
+    width: 100%;
+    background: white;
+    box-shadow: 5px 5px 10px #bbb;
+    border: 1px solid #ddd;
+    position: absolute;
+    bottom: calc(100% + 10px);
+    white-space: pre;
+}
+
+.snek-fuzzy-search-results {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 100%;
+}
+
+.snek-fuzzy-search-input {
+    width: 100%;
+    background: #f0f0f0;
+}
+
+.snek-fuzzy-cursor {
+    background: beige;
+    width: 100%;
+}
+
+.snek-fuzzy-search-input {
+    font-family: inherit;
+    background: #e0e0e0;
+    outline: none;
+    border: none;
+    padding: 0px;
+    box-sizing: border-box;
+    width: 100%;
 }

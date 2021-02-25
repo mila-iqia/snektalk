@@ -18,3 +18,6 @@ mv require.js $ASSETS/lib/require.min.js
 
 wget https://cdnjs.cloudflare.com/ajax/libs/split.js/1.2.0/split.min.js
 mv split.min.js $ASSETS/lib/split.min.js
+
+wget https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.4.6/fuse.min.js
+mv fuse.min.js $ASSETS/lib/fuse.min.js
