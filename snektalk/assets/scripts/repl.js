@@ -173,8 +173,13 @@ class Repl {
         this.statusBar = target.querySelector(".snek-status-bar");
         this.nav = target.querySelector(".snek-nav");
         this._setupEditor(this.inputBox);
+
         this.historySelection = 0;
+        this.filter = null;
+        this.filteredHistory = [""];
         this.history = [""];
+        this.expectedContent = null;
+
         target.onclick = this.$globalClickEvent.bind(this);
         window.onkeydown = this.$globalKDEvent.bind(this);
         window.$$SKTK = this.sktk.bind(this);
@@ -399,6 +404,11 @@ class Repl {
                 total > 1
                 || editor.getModel().getLineContent(1).match(/[\(\[\{:]$|^@/)
             )
+            if (this.expectedContent !== null
+                && this.editor.getValue() !== this.expectedContent) {
+                    this.filter = null;
+                    this.expectedContent = null;
+            }
         });
 
         let _submit = () => {
@@ -415,6 +425,7 @@ class Repl {
             else {
                 this.history[0] = "";
             }
+            this.filter = null;
             this.historySelection = 0;
             // The flex-direction on the outer pane is reversed, so
             // 0 scrolls it to the bottom. Handy.
@@ -474,21 +485,43 @@ class Repl {
         this.editor = editor;
     }
 
-    historyShift(delta) {
-        let sel = this.historySelection;
-        if (sel === 0) {
-            this.history[0] = this.editor.getValue();
+    setupFilter() {
+        this.filter = this.editor.getValue();
+        this.history[0] = this.filter;
+        if (!this.filter) {
+            this.filteredHistory = this.history.map(
+                (elem, idx) => ({item: idx})
+            );
         }
-        let n = this.history.length;
+        else {
+            const options = {
+                includeScore: true,
+                includeMatches: true,
+            };
+            const fuse = new Fuse(this.history, options);
+            this.filteredHistory = fuse.search(this.filter);
+        }
+        this.historySelection = 0;
+    }
+
+    historyShift(delta) {
+        if (this.filter === null) {
+            this.setupFilter();
+        }
+
+        let sel = this.historySelection;
+        let n = this.filteredHistory.length;
         let new_sel = Math.max(0, Math.min(n - 1, sel - delta));
 
-        if (new_sel == sel) {
+        if (new_sel === sel) {
             return;
         }
 
         this.historySelection = new_sel;
-        let text = this.history[new_sel];
+        let item = this.filteredHistory[new_sel].item;
+        let text = this.history[item];
 
+        this.expectedContent = text;
         this.editor.setValue(text);
 
         if (delta < 0) {
