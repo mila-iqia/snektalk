@@ -33,6 +33,14 @@ def cli():
     # [options: --no-watch]
     no_watch: Option & bool = default(False)
 
+    # Server port
+    # [alias: -p]
+    port: Option & int = default(None)
+
+    # Path to socket
+    # [alias: -S]
+    socket: Option & str = default(None)
+
     pattern = glob_filter(".")
     if no_watch:
         watch_args = None
@@ -42,9 +50,15 @@ def cli():
             "pattern": pattern,
         }
 
+    server_args = {
+        "port": port,
+        "sock": socket,
+    }
+
     sess = serve(
         watch_args=watch_args,
         template={"title": module or script or "snektalk"},
+        **server_args,
     )
     mod = None
     exc = None

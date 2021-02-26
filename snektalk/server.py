@@ -69,8 +69,21 @@ class SessionLock:
         return self.session
 
 
-def _launch(slock, watch_args=None, template={}):
-    port = find_port(6499, min_port=6500, max_port=6600)
+def create_socket(socket_path):
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.bind(socket_path)
+    return s
+
+
+def _launch(
+    slock, watch_args=None, port=None, sock=None, open_browser=True, template={}
+):
+    if port is not None and sock is not None:
+        raise ValueError("Cannot specify both port and socket")
+    elif sock is not None:
+        sock = create_socket(sock)
+    elif port is None:
+        port = find_port(6499, min_port=6500, max_port=6600)
 
     app = Sanic("snektalk")
     app.static("/lib/", f"{assets_path}/lib/")
@@ -95,12 +108,17 @@ def _launch(slock, watch_args=None, template={}):
             command = json.loads(await ws.recv())
             await sess.recv(**command)
 
-    @app.listener("after_server_start")
-    async def launch_func(app, loop):
-        webbrowser.open(f"http://localhost:{port}/")
+    if open_browser and port is not None:
+
+        @app.listener("after_server_start")
+        async def launch_func(app, loop):
+            webbrowser.open(f"http://localhost:{port}/")
 
     atexit.register(app.stop)
-    app.run(host="0.0.0.0", port=port, register_sys_signals=False)
+    if sock is not None:
+        app.run(host="0.0.0.0", sock=sock, register_sys_signals=False)
+    else:
+        app.run(host="0.0.0.0", port=port, register_sys_signals=False)
 
 
 def serve(**kwargs):
