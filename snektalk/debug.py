@@ -31,7 +31,7 @@ class SnekTalkDb(bdb.Bdb):
         if frame.f_code.co_filename.startswith(_here):
             # Avoid running the debugger in snektalk code
             self.set_continue()
-        elif self.step_now:
+        elif getattr(self, "step_now", False):
             self.step_now = False
             self.set_step()
         else:
