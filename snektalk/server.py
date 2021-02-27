@@ -12,36 +12,12 @@ import webbrowser
 import jurigged
 from sanic import Sanic, response
 
+from .network import create_socket, find_port
 from .repr import inject
 from .session import Session
 
 here = os.path.dirname(__file__)
 assets_path = os.path.join(here, "assets")
-
-
-def check_port(port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        s.bind(("0.0.0.0", port))
-    except socket.error as e:
-        if e.errno == errno.EADDRINUSE:
-            return False
-        else:
-            raise
-    s.close()
-    return True
-
-
-def find_port(preferred_port, min_port, max_port):
-    """Find a free port in the specified range.
-
-    Use preferred_port if available (does not have to be in the range).
-    """
-    candidate = preferred_port
-    while not check_port(candidate):
-        print("Nope to", candidate)
-        candidate = random.randint(min_port, max_port)
-    return candidate
 
 
 def status_logger(sess):
@@ -69,12 +45,6 @@ class SessionLock:
         return self.session
 
 
-def create_socket(socket_path):
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.bind(socket_path)
-    return s
-
-
 def _launch(
     slock, watch_args=None, port=None, sock=None, open_browser=True, template={}
 ):
@@ -97,6 +67,10 @@ def _launch(
             r"{{([^{}]+)}}", lambda m: template.get(m[1], f"!!{m[1]}"), index
         )
         return response.html(index)
+
+    @app.route("/status")
+    async def status(request):
+        return response.json({"status": "OK"})
 
     @app.websocket("/sktk")
     async def feed(request, ws):

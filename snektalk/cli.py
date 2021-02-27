@@ -9,6 +9,7 @@ from jurigged.utils import glob_filter
 
 from . import runpy as snek_runpy
 from .evaluator import Evaluator
+from .network import connect_to_existing
 from .server import serve
 
 
@@ -40,6 +41,14 @@ def cli():
     # Path to socket
     # [alias: -S]
     socket: Option & str = default(None)
+
+    # Hostname to connect to an existing instance
+    # [alias: -c]
+    connect: Option & str = default(False)
+
+    if connect:
+        connect_to_existing(connect, port, socket)
+        return
 
     pattern = glob_filter(".")
     if no_watch:
