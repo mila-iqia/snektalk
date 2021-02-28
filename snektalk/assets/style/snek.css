@@ -388,3 +388,7 @@ body {
     box-sizing: border-box;
     width: 100%;
 }
+
+.snek-shellout {
+    white-space: pre;
+}

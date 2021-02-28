@@ -1,6 +1,7 @@
 import ast
 import functools
 import re
+import subprocess
 import sys
 import time
 from types import ModuleType
@@ -165,6 +166,28 @@ class Evaluator:
                     )
                 )
 
+    @safe_fail
+    def command_shell(self, expr, glb, lcl):
+        expr = expr.lstrip()
+        self.session.schedule(
+            self.session.direct_send(command="echo", value=f"//{expr}")
+        )
+        proc = subprocess.run(expr, shell=True, capture_output=True)
+        if proc.stdout:
+            self.session.schedule(
+                self.session.send_result(
+                    H.div["snek-shellout"](proc.stdout.decode("utf8")),
+                    type="expression",
+                )
+            )
+        if proc.stderr:
+            self.session.schedule(
+                self.session.send_result(
+                    H.div["snek-shellout"](proc.stderr.decode("utf8")),
+                    type="exception",
+                )
+            )
+
     def command_quit(self, expr, glb, lcl):
         self.session.schedule(
             self.session.send_result(H.div("/quit"), type="echo",)
@@ -190,7 +213,10 @@ class Evaluator:
         )
 
     def dispatch(self, expr, glb=None, lcl=None):
-        if match := cmd_rx.fullmatch(expr):
+        if expr.startswith("//"):
+            cmd = "shell"
+            arg = expr[2:]
+        elif match := cmd_rx.fullmatch(expr):
             cmd, arg = match.groups()
             if arg is None:
                 arg = ""
