@@ -12,7 +12,7 @@ import webbrowser
 import jurigged
 from sanic import Sanic, response
 
-from .network import create_socket, find_port
+from .network import create_inet, create_socket
 from .repr import inject
 from .session import Session
 
@@ -53,7 +53,8 @@ def _launch(
     elif sock is not None:
         sock = create_socket(sock)
     elif port is None:
-        port = find_port(6499, min_port=6500, max_port=6600)
+        sock = create_inet()
+        host, port = sock.getsockname()
 
     app = Sanic("snektalk")
     app.static("/lib/", f"{assets_path}/lib/")
@@ -86,13 +87,12 @@ def _launch(
 
         @app.listener("after_server_start")
         async def launch_func(app, loop):
-            webbrowser.open(f"http://localhost:{port}/")
+            webbrowser.open(f"http://{host}:{port}/")
 
     atexit.register(app.stop)
-    if sock is not None:
-        app.run(host="0.0.0.0", sock=sock, register_sys_signals=False)
-    else:
-        app.run(host="0.0.0.0", port=port, register_sys_signals=False)
+    if port is not None:
+        print(f"Start server at: http://{host}:{port}/")
+    app.run(sock=sock, register_sys_signals=False)
 
 
 def serve(**kwargs):

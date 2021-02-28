@@ -1,5 +1,9 @@
+import atexit
+import errno
+import ipaddress
 import json
 import os
+import random
 import socket
 import subprocess
 import time
@@ -8,37 +12,32 @@ import webbrowser
 
 
 def create_socket(socket_path):
+    def rmsock():
+        os.remove(socket_path)
+        os.remove(f"{socket_path}.host")
+
     s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     s.bind(socket_path)
     usr = os.environ["USER"]
     host = socket.gethostname()
     with open(f"{socket_path}.host", "w") as hostfile:
         hostfile.write(f"{usr}@{host}")
+    atexit.register(rmsock)
     return s
 
 
-def check_port(port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def create_inet():
+    # Generate a random loopback address (127.x.x.x)
+    addr = ipaddress.IPv4Address("127.0.0.1") + random.randrange(2 ** 24 - 2)
+    addr = str(addr)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        s.bind(("0.0.0.0", port))
-    except socket.error as e:
-        if e.errno == errno.EADDRINUSE:
-            return False
-        else:
-            raise
-    s.close()
-    return True
-
-
-def find_port(preferred_port, min_port, max_port):
-    """Find a free port in the specified range.
-
-    Use preferred_port if available (does not have to be in the range).
-    """
-    candidate = preferred_port
-    while not check_port(candidate):
-        candidate = random.randint(min_port, max_port)
-    return candidate
+        sock.bind((addr, 0))
+    except OSError as exc:
+        if exc.errno == errno.EADDRNOTAVAIL:
+            # The full 127.x.x.x range may not be available on this system
+            sock.bind(("localhost", 0))
+    return sock
 
 
 def connect_to_existing(addr, port, sock):
@@ -68,7 +67,11 @@ def connect_to_existing(addr, port, sock):
     print(f"Socket path: {location}")
 
     if port is None:
-        port = find_port(6499, min_port=6500, max_port=6600)
+        sock = create_inet()
+        localhost, port = sock.getsockname()
+        sock.close()
+    else:
+        localhost = "localhost"
 
     print(f"Forwarding to local port {port}")
 
@@ -76,7 +79,7 @@ def connect_to_existing(addr, port, sock):
         cmd = [
             "ssh",
             "-nNCL",
-            f"{port}:{location}",
+            f"{localhost}:{port}:{location}",
             addr,
             "-p",
             jump_port,
@@ -86,7 +89,7 @@ def connect_to_existing(addr, port, sock):
         cmd = [
             "ssh",
             "-nNCL",
-            f"{port}:{location}",
+            f"{localhost}:{port}:{location}",
             "-J",
             f"{addr}:{jump_port}",
             sockhost,
@@ -94,7 +97,7 @@ def connect_to_existing(addr, port, sock):
 
     print("Run:", " ".join(cmd))
     proc = subprocess.Popen(cmd)
-    url = f"http://localhost:{port}/"
+    url = f"http://{localhost}:{port}/"
     print(f"Connecting to {url}")
 
     wait_time = 0.05
