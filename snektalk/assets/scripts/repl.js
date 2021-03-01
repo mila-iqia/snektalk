@@ -142,6 +142,8 @@ class Repl {
         this.inputMode = target.querySelector(".snek-input-mode");
         this.statusBar = target.querySelector(".snek-status-bar");
         this.nav = target.querySelector(".snek-nav");
+        this.statusHistory = document.createElement("div");
+        this.statusHistory.className = "snek-status-history";
         this._setupEditor(this.inputBox);
 
         this.historySelection = 0;
@@ -576,8 +578,28 @@ class Repl {
         return elem;
     }
 
-    send(message) {
-        // Send a message back to SnekTalk
+    find_method(prefix, name, dflt) {
+        let method_name = `${prefix}_${name}`;
+        let method = this[method_name] || dflt;
+        return method && method.bind(this);
+    }
+
+    send(data) {
+        this.find_method("send", data.command, this.send_default)(data);
+    }
+
+    send_submit(data) {
+        let cmd = /^\/([^ ]+)( .*)?/.exec(data.expr);
+        let method = cmd && this.find_method("cmd", cmd[1], null);
+        if (method !== null) {
+            method(cmd[0], cmd[2]);
+        }
+        else {
+            this.send_default(data);
+        }
+    }
+
+    send_default(data) {
         if (this.closed) {
             this.setStatus({
                 type: "error",
@@ -585,8 +607,13 @@ class Repl {
             });
         }
         else {
-            this.socket.send(JSON.stringify(message));
+            this.socket.send(JSON.stringify(data));
         }
+    }
+
+    cmd_status(fullexpr, arg) {
+        this.recv_echo({value: fullexpr});
+        this.append(this.statusHistory, "plain");
     }
 
     append(elem, type) {
@@ -596,7 +623,8 @@ class Repl {
         gutter.className = "snek-gutter snek-t-" + type;
         wrapper.appendChild(gutter);
         wrapper.appendChild(elem);
-        elem.className = "snek-result snek-t-" + type;
+        elem.classList.add("snek-result");
+        elem.classList.add("snek-t-" + type);
         this.pane.appendChild(wrapper);
         return wrapper;
     }
@@ -606,6 +634,9 @@ class Repl {
         this.statusBar.className =
             `snek-status-bar snek-status-${data.type} snek-status-flash-${data.type}`;
         this.statusBar.innerText = `${data.value} -- ${timestamp}`;
+        let statusCopy = document.createElement("div");
+        statusCopy.innerText = `${timestamp} ${data.value}`;
+        this.statusHistory.appendChild(statusCopy);
         setTimeout(
             () => {
                 this.statusBar.classList.remove(`snek-status-${data.type}`);
@@ -687,20 +718,17 @@ class Repl {
         this.inputMode.innerHTML = data.html;
     }
 
+    recv_bad(data) {
+        console.error("Received an unknown command:", data.command);
+    }
+
     connect() {
         let port = window.location.port;
         let socket = new WebSocket(`ws://localhost:${port}/sktk?session=main`);
 
         socket.addEventListener('message', event => {
             let data = JSON.parse(event.data);
-            let method_name = `recv_${data.command}`;
-            let method = this[method_name];
-            if (method !== undefined) {
-                method.bind(this)(data);
-            }
-            else {
-                console.error("Received an unknown command:", data.command);
-            }
+            this.find_method("recv", data.command, this.recv_bad)(data)
         });
 
         socket.addEventListener('error', event => {
