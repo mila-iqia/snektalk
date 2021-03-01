@@ -38,7 +38,7 @@ def new_evalid():
 
 
 class Session:
-    def __init__(self, socket):
+    def __init__(self, socket=None):
         self.blt = vars(builtins)
         self.idmap = {}
         self.varcount = count(1)
@@ -46,9 +46,9 @@ class Session:
         self.sent_resources = set()
         self.last_prompt = ""
         self.last_nav = ""
-        self.command_queue = deque()
+        self.in_queue = deque()
+        self.out_queue = deque()
         self.semaphore = threading.Semaphore(value=0)
-        self.loop = asyncio.get_running_loop()
         self._token = None
         self._tokenp = None
 
@@ -140,14 +140,18 @@ class Session:
 
     def next(self):
         self.semaphore.acquire()
-        return self.command_queue.popleft()
+        return self.in_queue.popleft()
 
     ###########
     # Sending #
     ###########
 
-    def bind(self, websocket):
-        pass
+    def bind(self, socket):
+        self.loop = asyncio.get_running_loop()
+        self.socket = socket
+        self.sent_resources = set()
+        while self.out_queue:
+            self.schedule(self.send(**self.out_queue.popleft()))
 
     async def send(self, process=True, **command):
         """Send a command to the client, plus any resources.
@@ -186,11 +190,14 @@ class Session:
 
         This queues the command using the session's asyncio loop.
         """
-        self.schedule(self.send(**command))
+        if self.socket is None or self.out_queue:
+            self.out_queue.append(command)
+        else:
+            self.schedule(self.send(**command))
 
     def queue_result(self, result, *, type):
         type, html = self.represent(type, result)
-        self.schedule(self.send(command="result", value=html, type=type))
+        self.queue(command="result", value=html, type=type)
 
     ############
     # Commands #
@@ -202,7 +209,7 @@ class Session:
         await meth(**command)
 
     async def command_submit(self, *, expr):
-        self.command_queue.append({"expr": expr})
+        self.in_queue.append({"expr": expr})
         self.semaphore.release()
 
     async def command_callback(self, *, id, response_id, arguments):

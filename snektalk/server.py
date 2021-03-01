@@ -29,25 +29,7 @@ def status_logger(sess):
     return log
 
 
-class SessionLock:
-    def __init__(self):
-        self.session = None
-        self.lock = threading.Lock()
-        self.lock.acquire()
-
-    def set(self, session):
-        self.session = session
-        self.lock.release()
-
-    def get(self):
-        self.lock.acquire()
-        self.lock.release()
-        return self.session
-
-
-def _launch(
-    slock, watch_args=None, port=None, sock=None, open_browser=True, template={}
-):
+def _launch(port=None, sock=None, open_browser=True, template={}, sess=None):
     if port is not None and sock is not None:
         raise ValueError("Cannot specify both port and socket")
     elif sock is not None:
@@ -75,18 +57,27 @@ def _launch(
 
     @app.websocket("/sktk")
     async def feed(request, ws):
-        sess = Session(ws)
-        slock.set(sess)
-        if watch_args is not None:
-            jurigged.watch(**watch_args, logger=status_logger(sess))
+        sess.bind(ws)
         while True:
             command = json.loads(await ws.recv())
-            await sess.recv(**command)
+            if sess.socket is ws:
+                await sess.recv(**command)
+            else:
+                await ws.send(
+                    json.dumps(
+                        {
+                            "command": "status",
+                            "type": "error",
+                            "value": "this connection was closed or pre-empted",
+                        }
+                    )
+                )
+                break
 
     if open_browser and port is not None:
 
         @app.listener("after_server_start")
-        async def launch_func(app, loop):
+        async def launch_browser(app, loop):
             webbrowser.open(f"http://{host}:{port}/")
 
     atexit.register(app.stop)
@@ -95,16 +86,17 @@ def _launch(
     app.run(sock=sock, register_sys_signals=False)
 
 
-def serve(**kwargs):
-    slock = SessionLock()
+def serve(watch_args=None, **kwargs):
+    sess = Session()
+    if watch_args is not None:
+        jurigged.watch(**watch_args, logger=status_logger(sess))
 
     def _start_server():
-        _launch(slock, **kwargs)
+        _launch(sess=sess, **kwargs)
 
     thread = threading.Thread(target=_start_server, daemon=True)
     thread.start()
 
-    sess = slock.get()
     sess.enter()
     inject()
     return sess
