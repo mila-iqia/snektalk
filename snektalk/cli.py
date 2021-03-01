@@ -102,7 +102,7 @@ def cli():
     except Exception as exc:
         if sess is not None:
             sess.blt["$$exc_info"] = sys.exc_info()
-            sess.schedule(sess.send_result(exc, type="exception"))
+            sess.queue_result(exc, type="exception")
         else:
             raise
 

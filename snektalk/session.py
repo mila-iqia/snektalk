@@ -146,37 +146,37 @@ class Session:
     # Sending #
     ###########
 
-    async def direct_send(self, **command):
-        """Send a command to the client."""
-        await self.socket.send(json.dumps(command))
+    def bind(self, websocket):
+        pass
 
-    async def send(self, **command):
+    async def send(self, process=True, **command):
         """Send a command to the client, plus any resources.
 
         Any field that is a Tag and contains resources will send
         resource commands to the client to load these resources.
         A resource is only sent once, the first time it is needed.
         """
-        resources = []
-        for k, v in command.items():
-            if isinstance(v, Tag):
-                resources.extend(v.collect_resources())
-                command[k] = str(v)
+        if process:
+            resources = []
+            for k, v in command.items():
+                if isinstance(v, Tag):
+                    resources.extend(v.collect_resources())
+                    command[k] = str(v)
 
-        for resource in resources:
-            if resource not in self.sent_resources:
-                await self.direct_send(command="resource", value=str(resource))
-                self.sent_resources.add(resource)
+            for resource in resources:
+                if resource not in self.sent_resources:
+                    await self.socket.send(
+                        json.dumps(
+                            {"command": "resource", "value": str(resource)}
+                        )
+                    )
+                    self.sent_resources.add(resource)
 
-        evalid = _current_evalid.get()
-        if evalid is not None:
-            command["evalid"] = evalid
+            evalid = _current_evalid.get()
+            if evalid is not None:
+                command["evalid"] = evalid
 
-        await self.direct_send(**command)
-
-    async def send_result(self, result, *, type):
-        type, html = self.represent(type, result)
-        await self.send(command="result", value=html, type=type)
+        await self.socket.send(json.dumps(command))
 
     def schedule(self, fn):
         self.loop.call_soon_threadsafe(lambda: self.loop.create_task(fn))
@@ -187,6 +187,10 @@ class Session:
         This queues the command using the session's asyncio loop.
         """
         self.schedule(self.send(**command))
+
+    def queue_result(self, result, *, type):
+        type, html = self.represent(type, result)
+        self.schedule(self.send(command="result", value=html, type=type))
 
     ############
     # Commands #

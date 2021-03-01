@@ -28,7 +28,7 @@ def safe_fail(fn):
         except Exception as e:
             self.session.blt["_"] = e
             self.session.blt["$$exc_info"] = sys.exc_info()
-            self.session.schedule(self.session.send_result(e, type="exception"))
+            self.session.queue_result(e, type="exception")
 
     return deco
 
@@ -95,16 +95,14 @@ class Evaluator:
         assert isinstance(expr, str)
         expr = expr.lstrip()
 
-        self.session.schedule(
-            self.session.direct_send(command="echo", value=expr)
-        )
+        self.session.queue(command="echo", value=expr, process=False)
 
         result = self.eval(expr, glb, lcl)
         typ = "statement" if result is None else "expression"
 
         self.session.blt["_"] = result
 
-        self.session.schedule(self.session.send_result(result, type=typ))
+        self.session.queue_result(result, type=typ)
 
     @safe_fail
     def command_dir(self, expr, glb=None, lcl=None):
@@ -112,24 +110,20 @@ class Evaluator:
 
         expr = expr.lstrip()
 
-        self.session.schedule(
-            self.session.direct_send(command="echo", value=f"/dir {expr}")
-        )
+        self.session.queue(command="echo", value=f"/dir {expr}", process=False)
 
         result = hdir(self.eval(expr, glb, lcl))
         typ = "statement" if result is None else "expression"
 
         self.session.blt["_"] = result
 
-        self.session.schedule(self.session.send_result(result, type=typ))
+        self.session.queue_result(result, type=typ)
 
     @safe_fail
     def command_edit(self, expr, glb, lcl):
         expr = expr.lstrip()
         obj = self.eval(expr, glb, lcl)
-        self.session.schedule(
-            self.session.send_result(find_fn(obj), type="expression")
-        )
+        self.session.queue_result(find_fn(obj), type="expression")
 
     @safe_fail
     def command_debug(self, expr, glb, lcl):
@@ -139,77 +133,60 @@ class Evaluator:
         glb = glb or self.glb
         lcl = lcl or self.lcl
         if expr:
-            self.session.schedule(
-                self.session.direct_send(command="echo", value=f"/debug {expr}")
+            self.session.queue(
+                command="echo", value=f"/debug {expr}", process=False
             )
             result = SnekTalkDb().runeval_step(expr, glb, lcl)
             typ = "statement" if result is None else "expression"
-            self.session.schedule(self.session.send_result(result, type=typ))
+            self.session.queue_result(result, type=typ)
 
         else:
             exc = self.session.blt.get("$$exc_info", None)
             if exc:
-                self.session.schedule(
-                    self.session.direct_send(
-                        command="echo",
-                        value=f"Debugging {exc[0].__qualname__}: {exc[1]}",
-                        language="text",
-                    )
+                self.session.queue(
+                    command="echo",
+                    value=f"Debugging {exc[0].__qualname__}: {exc[1]}",
+                    language="text",
+                    process=False,
                 )
                 tb = exc[2]
                 SnekTalkDb().interaction(tb.tb_frame, tb)
             else:
-                self.session.schedule(
-                    self.session.send_result(
-                        H.div("Last expression was not an exception"),
-                        type="exception",
-                    )
+                self.session.queue_result(
+                    H.div("Last expression was not an exception"),
+                    type="exception",
                 )
 
     @safe_fail
     def command_shell(self, expr, glb, lcl):
         expr = expr.lstrip()
-        self.session.schedule(
-            self.session.direct_send(command="echo", value=f"//{expr}")
-        )
+        self.session.queue(command="echo", value=f"//{expr}", process=False)
         proc = subprocess.run(expr, shell=True, capture_output=True)
         if proc.stdout:
-            self.session.schedule(
-                self.session.send_result(
-                    H.div["snek-shellout"](proc.stdout.decode("utf8")),
-                    type="expression",
-                )
+            self.session.queue_result(
+                H.div["snek-shellout"](proc.stdout.decode("utf8")),
+                type="expression",
             )
         if proc.stderr:
-            self.session.schedule(
-                self.session.send_result(
-                    H.div["snek-shellout"](proc.stderr.decode("utf8")),
-                    type="exception",
-                )
+            self.session.queue_result(
+                H.div["snek-shellout"](proc.stderr.decode("utf8")),
+                type="exception",
             )
 
     def command_quit(self, expr, glb, lcl):
-        self.session.schedule(
-            self.session.send_result(H.div("/quit"), type="echo",)
-        )
-        self.session.schedule(
-            self.session.send_result(
-                H.div("Quitting interpreter in ", self.format_modname()),
-                type="info",
-            )
+        self.session.queue_result(H.div("/quit"), type="echo")
+        self.session.queue_result(
+            H.div("Quitting interpreter in ", self.format_modname()),
+            type="info",
         )
         # Small delay so that the messages get flushed
         time.sleep(0.01)
         raise StopEvaluator()
 
     def missing(self, expr, cmd, arg, glb, lcl):
-        self.session.schedule(
-            self.session.direct_send(command="echo", value=expr)
-        )
-        self.session.schedule(
-            self.session.send_result(
-                H.div(f"Command '{cmd}' does not exist"), type="exception"
-            )
+        self.session.queue(command="echo", value=expr, process=False)
+        self.session.queue_result(
+            H.div(f"Command '{cmd}' does not exist"), type="exception"
         )
 
     def dispatch(self, expr, glb=None, lcl=None):
@@ -236,16 +213,14 @@ class Evaluator:
 
     def loop(self):
         pyv = sys.version_info
-        self.session.schedule(
-            self.session.send_result(
-                H.div(
-                    "Starting interpreter in ",
-                    self.format_modname(),
-                    H.br(),
-                    f"Snektalk {version} using Python {pyv.major}.{pyv.minor}.{pyv.micro}",
-                ),
-                type="info",
-            )
+        self.session.queue_result(
+            H.div(
+                "Starting interpreter in ",
+                self.format_modname(),
+                H.br(),
+                f"Snektalk {version} using Python {pyv.major}.{pyv.minor}.{pyv.micro}",
+            ),
+            type="info",
         )
         try:
             while True:
