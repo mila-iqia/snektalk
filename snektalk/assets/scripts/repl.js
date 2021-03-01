@@ -621,67 +621,70 @@ class Repl {
         );
     }
 
-    process_message(data) {
-        if (data.command == "resource") {
-            let elem = this.reify(data.value);
-            document.head.appendChild(elem);
+    recv_resource(data) {
+        let elem = this.reify(data.value);
+        document.head.appendChild(elem);
+    }
+
+    recv_result(data) {
+        let elem = this.reify(data.value);
+        let evalid = !data.evalid ? `E${++evalIdGen}` : data.evalid
+        let prbox = document.getElementById("pr-eval-" + evalid);
+        if (prbox === null) {
+            prbox = document.createElement("div");
+            prbox.id = "pr-eval-" + evalid;
+            this.append(prbox, "print");
         }
-        else if (data.command == "result") {
-            let elem = this.reify(data.value);
-            let evalid = !data.evalid ? `E${++evalIdGen}` : data.evalid
-            let prbox = document.getElementById("pr-eval-" + evalid);
-            if (prbox === null) {
-                prbox = document.createElement("div");
-                prbox.id = "pr-eval-" + evalid;
-                this.append(prbox, "print");
-            }
-            if (data.type === "statement") { }
-            else if (data.type === "print") {
-                prbox.appendChild(elem);
-            }
-            else {
-                this.append(elem, data.type);
-            }
-        }
-        else if (data.command == "echo") {
-            let ed = this.read_only_editor(data.value.trimEnd(), data.language || "python");
-            let elem = document.createElement("div");
-            elem.appendChild(ed);
-            this.append(elem, "echo");
-        }
-        else if (data.command == "response") {
-            let {resolve, reject} = this.$responseMap[data.response_id];
-            if (data.error) {
-                reject(data.error);
-            }
-            else {
-                resolve(data.value);
-            }
-        }
-        else if (data.command == "pastevar") {
-            let varname = data.value;
-            this.editor.trigger("keyboard", "type", {text: varname});
-            this.editor.focus();
-        }
-        else if (data.command == "status") {
-            this.setStatus(data);
-        }
-        else if (data.command == "set_nav") {
-            this.nav.innerHTML = "";
-            if (data.value) {
-                let elem = this.reify(data.value);
-                this.nav.appendChild(elem);
-            }
-        }
-        else if (data.command == "eval") {
-            eval(data.value);
-        }
-        else if (data.command == "set_mode") {
-            this.inputMode.innerHTML = data.html;
+        if (data.type === "statement") { }
+        else if (data.type === "print") {
+            prbox.appendChild(elem);
         }
         else {
-            console.error("Received an unknown command:", data.command);
+            this.append(elem, data.type);
         }
+    }
+
+    recv_echo(data) {
+        let ed = this.read_only_editor(data.value.trimEnd(), data.language || "python");
+        let elem = document.createElement("div");
+        elem.appendChild(ed);
+        this.append(elem, "echo");
+    }
+
+    recv_response(data) {
+        let {resolve, reject} = this.$responseMap[data.response_id];
+        if (data.error) {
+            reject(data.error);
+        }
+        else {
+            resolve(data.value);
+        }
+    }
+
+    recv_pastevar(data) {
+        let varname = data.value;
+        this.editor.trigger("keyboard", "type", {text: varname});
+        this.editor.focus();
+    }
+
+    recv_status(data) {
+        this.setStatus(data);
+    }
+
+    recv_set_nav(data) {
+        this.nav.innerHTML = "";
+        if (data.value) {
+            let elem = this.reify(data.value);
+            this.nav.appendChild(elem);
+        }
+    }
+
+    recv_eval(data) {
+        eval(data.value);
+    }
+
+    recv_set_mode(data) {
+        this.inputMode.innerHTML = data.html;
     }
 
     connect() {
@@ -690,7 +693,14 @@ class Repl {
 
         socket.addEventListener('message', event => {
             let data = JSON.parse(event.data);
-            this.process_message(data);
+            let method_name = `recv_${data.command}`;
+            let method = this[method_name];
+            if (method !== undefined) {
+                method.bind(this)(data);
+            }
+            else {
+                console.error("Received an unknown command:", data.command);
+            }
         });
 
         socket.addEventListener('error', event => {
