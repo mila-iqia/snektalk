@@ -226,9 +226,12 @@ class Evaluator:
             while True:
                 prompt = H.span["snek-input-mode-python"](">>>")
                 with self.session.prompt(prompt) as cmd:
-                    expr = cmd["expr"]
-                    if expr.strip():
-                        self.dispatch(expr)
+                    if cmd["command"] == "expr":
+                        expr = cmd["expr"]
+                        if expr.strip():
+                            self.dispatch(expr)
+                    elif cmd["command"] == "noop":
+                        pass
         except StopEvaluator:
             return
 

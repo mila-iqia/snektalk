@@ -63,8 +63,11 @@ class SnekTalkDb(bdb.Bdb):
         while not self.proceed:
             self.show_frame(self.get_frame())
             with self.session.prompt(prompt=self.prompt, nav=self.nav) as cmd:
-                expr = cmd["expr"]
-                self.do(expr)
+                if cmd["command"] == "expr":
+                    expr = cmd["expr"]
+                    self.do(expr)
+                elif cmd["command"] == "noop":
+                    pass
 
     def error(self, message):
         print(H.i(message, style="color:red"))

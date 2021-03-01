@@ -152,6 +152,7 @@ class Session:
         self.sent_resources = set()
         while self.out_queue:
             self.schedule(self.send(**self.out_queue.popleft()))
+        self.submit({"command": "noop"})
 
     async def send(self, process=True, **command):
         """Send a command to the client, plus any resources.
@@ -203,14 +204,17 @@ class Session:
     # Commands #
     ############
 
+    def submit(self, data):
+        self.in_queue.append(data)
+        self.semaphore.release()
+
     async def recv(self, **command):
         cmd = command.pop("command", "none")
         meth = getattr(self, f"command_{cmd}", None)
         await meth(**command)
 
     async def command_submit(self, *, expr):
-        self.in_queue.append({"expr": expr})
-        self.semaphore.release()
+        self.submit({"command": "expr", "expr": expr})
 
     async def command_callback(self, *, id, response_id, arguments):
         try:
