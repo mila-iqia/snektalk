@@ -3,7 +3,7 @@ import sys
 
 from .debug import SnekTalkDb
 from .evaluator import Evaluator
-from .repr import inject
+from .repr import inject, snekprint as print
 from .server import serve
 from .session import current_session
 from .utils import Interactor, pastecode, pastevar

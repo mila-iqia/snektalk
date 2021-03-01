@@ -7,7 +7,7 @@ from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .debug import SnekTalkDb
 from .fntools import find_fn
-from .session import current_session
+from .session import current_print_session, current_session
 from .utils import format_libpath, join, represents, sktk_hjson
 
 ##################
@@ -26,17 +26,12 @@ class PrintSequence(tuple):
         )
 
 
-def snekprint(*args, toplevel=False, file=None, std=False, **kwargs):
-    builtins.print = orig_print
-    sess = current_session()
+def snekprint(*args, toplevel=False, **kwargs):
+    sess = current_print_session()
     if sess is None:
-        orig_print(*args, **kwargs)
+        orig_print(*args)
     else:
-        if std or file is not None:
-            print(*args, file=file, **kwargs)
-            builtins.print = snekprint
-            return
-        elif all(isinstance(arg, str) for arg in args):
+        if all(isinstance(arg, str) for arg in args):
             html = H.div["snek-print-str"](" ".join(args))
         elif toplevel:
             html = hrepr(*args, **kwargs)
@@ -45,7 +40,16 @@ def snekprint(*args, toplevel=False, file=None, std=False, **kwargs):
         sess.queue(
             command="result", value=html, type="print",
         )
-    builtins.print = snekprint
+
+
+def snekprint_override(*args, toplevel=False, file=None, std=False, **kwargs):
+    builtins.print = orig_print
+    sess = current_print_session()
+    if sess is None or std or file is not None:
+        orig_print(*args, file=file, **kwargs)
+    else:
+        snekprint(*args, toplevel=toplevel, **kwargs)
+    builtins.print = snekprint_override
 
 
 def help_placeholder(*args, **kwargs):
@@ -326,7 +330,7 @@ def snekbreakpoint():
 
 def inject():
     builtins.help = help_placeholder
-    builtins.print = snekprint
+    builtins.print = snekprint_override
     builtins.breakpoint = snekbreakpoint
     builtins.hdir = hdir
     builtins.print0 = orig_print

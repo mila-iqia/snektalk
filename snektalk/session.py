@@ -16,11 +16,16 @@ from .registry import callback_registry
 _c = count(1)
 
 _current_session = ContextVar("current_session", default=None)
+_current_print_session = ContextVar("current_print_session", default=None)
 _current_evalid = ContextVar("current_evalid", default=None)
 
 
 def current_session():
     return _current_session.get()
+
+
+def current_print_session():
+    return _current_print_session.get()
 
 
 @contextmanager
@@ -44,24 +49,32 @@ class Session:
         self.command_queue = deque()
         self.semaphore = threading.Semaphore(value=0)
         self.loop = asyncio.get_running_loop()
+        self._token = None
+        self._tokenp = None
 
     #############
     # Utilities #
     #############
 
-    def enter(self):
+    def enter(self, capture_print=True):
         self._token = _current_session.set(self)
+        if capture_print:
+            self._tokenp = _current_print_session.set(self)
 
     def exit(self):
         _current_session.reset(self._token)
+        if self._tokenp:
+            _current_print_session.reset(self._tokenp)
 
     @contextmanager
     def set_context(self):
         token = _current_session.set(self)
+        tokenp = _current_print_session.set(self)
         try:
             yield
         finally:
             _current_session.reset(token)
+            _current_print_session.reset(tokenp)
 
     def set_globals(self, glb):
         self.glb = glb
