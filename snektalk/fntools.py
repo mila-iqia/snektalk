@@ -12,7 +12,9 @@ class SnekRecoder(Interactor):
     js_constructor = "LiveEditor"
     js_source = "/scripts/liveedit.js"
 
-    def __init__(self, recoder, fn, code_highlight=None, max_height=500):
+    def __init__(
+        self, recoder, fn, code_highlight=None, max_height=500, autofocus=False
+    ):
         self.recoder = recoder
         self.fn = fn
         super().__init__(
@@ -24,6 +26,7 @@ class SnekRecoder(Interactor):
                 "filename": format_libpath(self.recoder.codefile.filename),
                 "highlight": code_highlight,
                 "max_height": max_height,
+                "autofocus": autofocus,
             }
         )
         self.recoder.on_status.register(self.on_status)

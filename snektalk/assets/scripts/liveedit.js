@@ -13,6 +13,10 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
             this.setupElement();
             this.setupEditor();
             this.inferStatus();
+
+            if (this.options.autofocus) {
+                this.editor.focus();
+            }
         }
 
         setupElement() {

@@ -123,7 +123,9 @@ class Evaluator:
     def command_edit(self, expr, glb, lcl):
         expr = expr.lstrip()
         obj = self.eval(expr, glb, lcl)
-        self.session.queue_result(find_fn(obj), type="expression")
+        self.session.queue_result(
+            find_fn(obj, autofocus=True), type="expression"
+        )
 
     @safe_fail
     def command_debug(self, expr, glb, lcl):
