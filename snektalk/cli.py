@@ -107,5 +107,5 @@ def cli():
             raise
 
     finally:
-        if sess is not None and mod is not None:
-            Evaluator(mod, vars(mod), None, sess).loop()
+        if sess is not None:
+            Evaluator(mod, vars(mod) if mod else {}, None, sess).loop()
