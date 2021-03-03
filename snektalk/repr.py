@@ -116,9 +116,7 @@ class SnekTalkHrepr(Hrepr):
     def hrepr(self, exc: Exception):
         exc_proper = self.H.div["hrepr-error", "hrepr-instance", "hreprl-h"](
             self.H.div["hrepr-title"](type(exc).__name__),
-            self.H.div["hrepr-error-message"](
-                self.H.code(exc.args and exc.args[0])
-            ),
+            self.H.div["hrepr-error-message"](self.H.code(str(exc))),
         )
 
         if self.state.depth > 0:
