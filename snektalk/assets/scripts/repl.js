@@ -476,6 +476,11 @@ class Repl {
             "popupActive"
         );
 
+        editor.addCommand(
+            KM.Alt | KC.US_SEMICOLON,
+            () => { this.editor.trigger(null, "editor.action.commentLine"); },
+        );
+
         this.editor = editor;
     }
 
