@@ -35,7 +35,8 @@ def safe_fail(fn):
 
 def evaluate(expr, glb, lcl):
     filename = virtual_file("repl", expr)
-    cf = CodeFile(filename=filename, source=expr, module_name=glb["__name__"])
+    mname = glb.get("__name__", None)
+    cf = CodeFile(filename=filename, source=expr, module_name=mname)
     registry.cache[filename] = cf
 
     tree = ast.parse(expr)
