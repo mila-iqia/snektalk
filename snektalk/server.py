@@ -10,6 +10,7 @@ import threading
 import webbrowser
 
 import jurigged
+from jurigged import codetools
 from sanic import Sanic, response
 
 from .network import create_inet, create_socket
@@ -22,9 +23,13 @@ assets_path = os.path.join(here, "assets")
 
 def status_logger(sess):
     def log(event):
-        sess.queue(
-            command="status", type="normal", value=str(event),
-        )
+        if (isinstance(event, codetools.UpdateOperation)
+            and not isinstance(event.code, codetools.FunctionCode)):
+            return
+        else:
+            sess.queue(
+                command="status", type="normal", value=str(event),
+            )
 
     return log
 
