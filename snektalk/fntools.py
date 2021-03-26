@@ -20,8 +20,8 @@ class SnekRecoder(Interactor):
         super().__init__(
             {
                 "content": {
-                    "live": self.recoder.focus.live,
-                    "saved": self.recoder.focus.saved,
+                    "live": self.recoder.focus.codestring,
+                    "saved": self.recoder.focus.stashed.content,
                 },
                 "filename": format_libpath(self.recoder.codefile.filename),
                 "highlight": code_highlight,

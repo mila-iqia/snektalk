@@ -48,9 +48,9 @@ class SnekTalkDb(bdb.Bdb):
             )
         else:
             self.nav.js.update(
-                defn.live,
+                defn.codestring,
                 format_libpath(defn.filename),
-                defn.firstlineno,
+                defn.stashed.lineno,
                 frame.f_lineno,
             )
 
