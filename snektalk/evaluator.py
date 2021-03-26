@@ -3,6 +3,7 @@ import functools
 import re
 import subprocess
 import sys
+import threading
 import time
 from types import ModuleType
 
@@ -11,6 +12,7 @@ from jurigged import CodeFile, registry
 from jurigged.recode import virtual_file
 
 from .fntools import find_fn
+from .session import current_session, new_evalid
 from .version import version
 
 cmd_rx = re.compile(r"/([^ ]+)( .*)?")
@@ -18,6 +20,17 @@ cmd_rx = re.compile(r"/([^ ]+)( .*)?")
 
 class StopEvaluator(Exception):
     pass
+
+
+def run_in_thread(fn, session=None):
+    def run():
+        with session.set_context():
+            with new_evalid():
+                fn()
+
+    session = session or current_session()
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
 
 
 def safe_fail(fn):
@@ -178,6 +191,10 @@ class Evaluator:
                 H.div["snek-shellout"](proc.stderr.decode("utf8")),
                 type="exception",
             )
+
+    @safe_fail
+    def command_thread(self, expr, glb, lcl):
+        run_in_thread(lambda: self.command_eval(expr, glb, lcl))
 
     def command_quit(self, expr, glb, lcl):
         self.session.queue_result(H.div("/quit"), type="echo")

@@ -8,7 +8,7 @@ from jurigged import registry
 from jurigged.utils import glob_filter
 
 from . import runpy as snek_runpy
-from .evaluator import Evaluator
+from .evaluator import Evaluator, run_in_thread
 from .network import connect_to_existing
 from .server import serve
 
@@ -45,6 +45,10 @@ def cli():
     # Hostname to connect to an existing instance
     # [alias: -c]
     connect: Option & str = default(False)
+
+    # Run the program in a thread
+    # [alias: -t]
+    thread: Option & bool = default(False)
 
     if connect:
         connect_to_existing(connect, port, socket)
@@ -107,7 +111,10 @@ def cli():
             mod = ModuleType("__main__")
 
         if run is not None:
-            run()
+            if thread:
+                run_in_thread(run, session=sess)
+            else:
+                run()
 
     except Exception as exc:
         if sess is not None:
