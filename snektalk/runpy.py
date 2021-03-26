@@ -79,14 +79,15 @@ def _run_code(
 def _run_module_code(
     code,
     init_globals=None,
-    mod_name=None,
+    module_object=None,
     mod_spec=None,
     pkg_name=None,
     script_name=None,
 ):
     """Helper to run code in new namespace with sys modified"""
     fname = script_name if mod_spec is None else mod_spec.origin
-    temp_module = types.ModuleType(mod_name)
+    mod_name = module_object.__name__
+    temp_module = module_object
     sys.modules[mod_name] = temp_module
     with _ModifiedArgv0(fname):
         mod_globals = temp_module.__dict__
@@ -208,18 +209,16 @@ def _run_module_as_main(mod_name, alter_argv=True):
     return _run_code(code, main_globals, None, "__main__", mod_spec)
 
 
-def run_module(mod_name, init_globals=None, run_name=None, alter_sys=False):
+def run_module(mod_name, init_globals=None, module_object=None, alter_sys=True):
     """Execute a module's code without importing it
        Returns the resulting top level namespace dictionary
     """
     mod_name, mod_spec, code = _get_module_details(mod_name)
-    if run_name is None:
-        run_name = mod_name
     if alter_sys:
-        return _run_module_code(code, init_globals, run_name, mod_spec)
+        return _run_module_code(code, init_globals, module_object, mod_spec)
     else:
         # Leave the sys module alone
-        return _run_code(code, {}, init_globals, run_name, mod_spec)
+        return _run_code(code, module_object.__dict__, init_globals, module_object.__name__, mod_spec)
 
 
 def _get_main_module_details(error=ImportError):
@@ -254,7 +253,7 @@ def _get_code_from_file(run_name, fname):
     return code, fname
 
 
-def run_path(path_name, init_globals=None, run_name=None):
+def run_path(path_name, module_object, init_globals=None):
     """Execute code located at the specified filesystem location
        Returns the resulting top level namespace dictionary
        The file path may refer directly to a Python script (i.e.
@@ -262,9 +261,7 @@ def run_path(path_name, init_globals=None, run_name=None):
        it may refer to a zipfile or directory containing a top
        level __main__.py script.
     """
-    if run_name is None:
-        run_name = "<run_path>"
-    pkg_name = run_name.rpartition(".")[0]
+    run_name = pkg_name = module_object.__name__
     importer = get_importer(path_name)
     # Trying to avoid importing imp so as to not consume the deprecation warning.
     is_NullImporter = False
@@ -276,7 +273,7 @@ def run_path(path_name, init_globals=None, run_name=None):
         # execfile() doesn't help as we want to allow compiled files
         code, fname = _get_code_from_file(run_name, path_name)
         return _run_module_code(
-            code, init_globals, run_name, pkg_name=pkg_name, script_name=fname
+            code, init_globals, module_object, pkg_name=pkg_name, script_name=fname
         )
     else:
         # Finder is defined for path, so add it to
@@ -290,7 +287,7 @@ def run_path(path_name, init_globals=None, run_name=None):
             # code. If we don't do this, a __loader__ attribute in the
             # existing __main__ module may prevent location of the new module.
             mod_name, mod_spec, code = _get_main_module_details()
-            temp_module = types.ModuleType(run_name)
+            temp_module = module_object
             sys.modules[run_name] = temp_module
             with _ModifiedArgv0(path_name):
                 mod_globals = temp_module.__dict__

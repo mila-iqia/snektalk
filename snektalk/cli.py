@@ -71,6 +71,7 @@ def cli():
     )
     mod = None
     exc = None
+    run = None
 
     try:
         if module:
@@ -81,11 +82,15 @@ def cli():
             if ":" in module:
                 module, func = module.split(":", 1)
                 mod = importlib.import_module(module)
-                call = getattr(mod, func)
-                call()
+                run = getattr(mod, func)
 
             else:
-                mod = snek_runpy.run_module(module, run_name="__main__")
+                _, spec, code = snek_runpy._get_module_details(module)
+                if pattern(spec.origin):
+                    registry.prepare("__main__", spec.origin)
+                mod = ModuleType("__main__")
+                def run():
+                    snek_runpy.run_module(module, module_object=mod)
 
         elif script:
             path = os.path.abspath(script)
@@ -94,10 +99,15 @@ def cli():
                 # module resolution
                 registry.prepare("__main__", path)
             sys.argv[1:] = argv
-            mod = snek_runpy.run_path(path, run_name="__main__")
+            mod = ModuleType("__main__")
+            def run():
+                snek_runpy.run_path(path, module_object=mod)
 
         else:
             mod = ModuleType("__main__")
+
+        if run is not None:
+            run()
 
     except Exception as exc:
         if sess is not None:
