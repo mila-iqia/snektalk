@@ -39,6 +39,7 @@ def _launch(port=None, sock=None, open_browser=True, template={}, sess=None):
         host, port = sock.getsockname()
 
     app = Sanic("snektalk")
+    app.static("/favicon.ico", f"{assets_path}/favicon.ico")
     app.static("/lib/", f"{assets_path}/lib/")
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
