@@ -6,7 +6,7 @@ from types import FunctionType, MethodType, ModuleType
 from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .debug import SnekTalkDb
-from .fntools import find_fn
+from .feat.edit import edit
 from .session import current_print_session, current_session
 from .utils import format_libpath, join, represents, sktk_hjson
 
@@ -141,7 +141,7 @@ class SnekTalkHrepr(Hrepr):
 
             hl = curr.tb_lineno - code.co_firstlineno
             try:
-                ed = find_fn(code, code_highlight=hl, max_height=19 * 7)
+                ed = edit(code, code_highlight=hl, max_height=19 * 7)
             except Exception as exc:
                 ed = None
             parts.append(
@@ -179,7 +179,7 @@ class SnekTalkHrepr(Hrepr):
 
     def hrepr(self, fn: FunctionType):  # noqa: F811
         if self.state.depth == 0:
-            ed = find_fn(fn)
+            ed = edit(fn)
             if ed is None:
                 return NotImplemented
             return self(ed)
@@ -188,7 +188,7 @@ class SnekTalkHrepr(Hrepr):
 
     def hrepr(self, fn: MethodType):  # noqa: F811
         if self.state.depth == 0:
-            ed = find_fn(fn.__func__)
+            ed = edit(fn.__func__)
             if ed is None:
                 return NotImplemented
             return H.instance(
@@ -291,7 +291,7 @@ class SnekTalkHrepr(Hrepr):
     def hrepr(self, clsm: (classmethod, staticmethod)):  # noqa: F811
         fn = clsm.__func__
         if self.state.depth == 0 and isinstance(fn, FunctionType):
-            ed = find_fn(fn)
+            ed = edit(fn)
             if ed is None:
                 return NotImplemented
             return self.H.div(self(ed))
@@ -307,9 +307,9 @@ class SnekTalkHrepr(Hrepr):
         if self.state.depth == 0:
             title = "property"
             return self.H.instance(
-                H.pair("fget", self(find_fn(prop.fget)), delimiter="="),
-                H.pair("fset", self(find_fn(prop.fset)), delimiter="="),
-                H.pair("fdel", self(find_fn(prop.fdel)), delimiter="="),
+                H.pair("fget", self(edit(prop.fget)), delimiter="="),
+                H.pair("fset", self(edit(prop.fset)), delimiter="="),
+                H.pair("fdel", self(edit(prop.fdel)), delimiter="="),
                 type=title,
                 vertical=True,
             )

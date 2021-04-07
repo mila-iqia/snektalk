@@ -1,10 +1,59 @@
+import types
+from dataclasses import dataclass
 from itertools import count
 
 from jurigged import make_recoder
+from ovld import ovld
+from ovld.core import _Ovld
 
-from .utils import Interactor, format_libpath, represents
+from ..utils import Interactor, format_libpath, represents
 
-_c = count()
+########
+# edit #
+########
+
+
+
+@dataclass
+class Point:
+    x: int
+    y: int
+
+
+class Robineux:
+    def __init__(self, x):
+        self.x = x * 4
+        self.y = "bonk"
+        print("yay!")
+
+    def plonk(self):
+        pass
+
+
+@ovld.dispatch
+def edit(self, obj, **kwargs):
+    if hasattr(obj, "__snek_edit__"):
+        return obj.__snek_edit__(**kwargs)
+    else:
+        return self[type(obj)](obj, **kwargs)
+
+
+@ovld
+def edit(
+    obj: (type, types.FunctionType, types.CodeType, types.ModuleType), **kwargs
+):
+    recoder = make_recoder(obj)
+    return recoder and SnekRecoder(recoder, obj, **kwargs)
+
+
+@ovld
+def edit(obj: _Ovld, **kwargs):
+    return "TODO :)"
+
+
+######################
+# Python code editor #
+######################
 
 
 class SnekRecoder(Interactor):
@@ -42,8 +91,3 @@ class SnekRecoder(Interactor):
     def py_commit(self, new_source):
         if self.py_save(new_source):
             self.recoder.commit()
-
-
-def find_fn(fn, **kwargs):
-    recoder = make_recoder(fn)
-    return recoder and SnekRecoder(recoder, fn, **kwargs)

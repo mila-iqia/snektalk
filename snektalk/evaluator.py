@@ -11,7 +11,7 @@ from hrepr import H
 from jurigged import CodeFile, registry
 from jurigged.recode import virtual_file
 
-from .fntools import find_fn
+from .feat.edit import edit
 from .session import current_session, new_evalid
 from .version import version
 
@@ -140,9 +140,7 @@ class Evaluator:
     def command_edit(self, expr, glb, lcl):
         expr = expr.lstrip()
         obj = self.eval(expr, glb, lcl)
-        self.session.queue_result(
-            find_fn(obj, autofocus=True), type="expression"
-        )
+        self.session.queue_result(edit(obj, autofocus=True), type="expression")
 
     @safe_fail
     def command_debug(self, expr, glb, lcl):
