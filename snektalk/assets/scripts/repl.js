@@ -621,7 +621,7 @@ class Repl {
         this.append(this.statusHistory, "plain");
     }
 
-    append(elem, type) {
+    append(elem, type, target) {
         let wrapper = document.createElement("div");
         wrapper.className = "snek-line snek-t-" + type;
         let gutter = document.createElement("div");
@@ -630,7 +630,7 @@ class Repl {
         wrapper.appendChild(elem);
         elem.classList.add("snek-result");
         elem.classList.add("snek-t-" + type);
-        this.pane.appendChild(wrapper);
+        (target || this.pane).appendChild(wrapper);
         return wrapper;
     }
 
@@ -669,14 +669,11 @@ class Repl {
         if (prbox === null) {
             prbox = document.createElement("div");
             prbox.id = "pr-eval-" + evalid;
-            this.append(prbox, "print");
+            this.pane.appendChild(prbox);
         }
         if (data.type === "statement") { }
-        else if (data.type === "print") {
-            prbox.appendChild(elem);
-        }
         else {
-            this.append(elem, data.type);
+            this.append(elem, data.type, prbox);
         }
     }
 

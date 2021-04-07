@@ -1,10 +1,13 @@
 import ast
 import functools
+import os
+import random
 import re
 import subprocess
 import sys
 import threading
 import time
+from itertools import count
 from types import ModuleType
 
 from hrepr import H
@@ -18,19 +21,55 @@ from .version import version
 cmd_rx = re.compile(r"/([^ ]+)( .*)?")
 
 
+class NamedThreads:
+    def __init__(self):
+        self.words = [
+            word
+            for word in open(
+                os.path.join(os.path.dirname(__file__), "words.txt")
+            )
+            .read()
+            .split("\n")
+            if word
+        ]
+        random.shuffle(self.words)
+        self.threads = {}
+        self.count = count(1)
+
+    def run_in_thread(self, fn, session=None):
+        def run():
+            self.threads[word] = thread
+            with session.set_context():
+                with new_evalid():
+                    session.queue_result(
+                        H.div("Starting thread ", H.strong(word)), type="info",
+                    )
+                    try:
+                        fn()
+                    finally:
+                        del self.threads[word]
+                        self.words.append(word)
+                        session.queue_result(
+                            H.div("Thread ", H.strong(word), " finished"),
+                            type="info",
+                        )
+
+        session = session or current_session()
+        thread = threading.Thread(target=run, daemon=True)
+
+        if not self.words:
+            self.words.append(f"t{next(self.count)}")
+        word = self.words.pop()
+
+        thread.start()
+        return word, thread
+
+
+threads = NamedThreads()
+
+
 class StopEvaluator(Exception):
     pass
-
-
-def run_in_thread(fn, session=None):
-    def run():
-        with session.set_context():
-            with new_evalid():
-                fn()
-
-    session = session or current_session()
-    thread = threading.Thread(target=run, daemon=True)
-    thread.start()
 
 
 def safe_fail(fn):
@@ -192,7 +231,17 @@ class Evaluator:
 
     @safe_fail
     def command_thread(self, expr, glb, lcl):
-        run_in_thread(lambda: self.command_eval(expr, glb, lcl))
+        assert isinstance(expr, str)
+        expr = expr.lstrip()
+        self.session.queue(command="echo", value=expr, process=False)
+
+        def run():
+            result = self.eval(expr, glb, lcl)
+            typ = "statement" if result is None else "expression"
+            self.session.blt["_"] = result
+            self.session.queue_result(result, type=typ)
+
+        threads.run_in_thread(run)
 
     def command_quit(self, expr, glb, lcl):
         self.session.queue_result(H.div("/quit"), type="echo")

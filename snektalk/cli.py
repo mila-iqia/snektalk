@@ -8,7 +8,7 @@ from jurigged import registry
 from jurigged.utils import glob_filter
 
 from . import runpy as snek_runpy
-from .evaluator import Evaluator, run_in_thread
+from .evaluator import Evaluator, threads
 from .network import connect_to_existing
 from .server import serve
 
@@ -114,7 +114,7 @@ def cli():
 
         if run is not None:
             if thread:
-                run_in_thread(run, session=sess)
+                threads.run_in_thread(run, session=sess)
             else:
                 run()
 
