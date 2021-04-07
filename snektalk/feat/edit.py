@@ -4,30 +4,12 @@ from itertools import count
 
 from jurigged import make_recoder
 from ovld import ovld
-from ovld.core import _Ovld
 
 from ..utils import Interactor, format_libpath, represents
 
 ########
 # edit #
 ########
-
-
-
-@dataclass
-class Point:
-    x: int
-    y: int
-
-
-class Robineux:
-    def __init__(self, x):
-        self.x = x * 4
-        self.y = "bonk"
-        print("yay!")
-
-    def plonk(self):
-        pass
 
 
 @ovld.dispatch
@@ -44,11 +26,6 @@ def edit(
 ):
     recoder = make_recoder(obj)
     return recoder and SnekRecoder(recoder, obj, **kwargs)
-
-
-@ovld
-def edit(obj: _Ovld, **kwargs):
-    return "TODO :)"
 
 
 ######################
