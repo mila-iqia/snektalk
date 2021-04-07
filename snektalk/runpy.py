@@ -218,7 +218,13 @@ def run_module(mod_name, init_globals=None, module_object=None, alter_sys=True):
         return _run_module_code(code, init_globals, module_object, mod_spec)
     else:
         # Leave the sys module alone
-        return _run_code(code, module_object.__dict__, init_globals, module_object.__name__, mod_spec)
+        return _run_code(
+            code,
+            module_object.__dict__,
+            init_globals,
+            module_object.__name__,
+            mod_spec,
+        )
 
 
 def _get_main_module_details(error=ImportError):
@@ -273,7 +279,11 @@ def run_path(path_name, module_object, init_globals=None):
         # execfile() doesn't help as we want to allow compiled files
         code, fname = _get_code_from_file(run_name, path_name)
         return _run_module_code(
-            code, init_globals, module_object, pkg_name=pkg_name, script_name=fname
+            code,
+            init_globals,
+            module_object,
+            pkg_name=pkg_name,
+            script_name=fname,
         )
     else:
         # Finder is defined for path, so add it to

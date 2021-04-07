@@ -23,8 +23,9 @@ assets_path = os.path.join(here, "assets")
 
 def status_logger(sess):
     def log(event):
-        if (isinstance(event, codetools.UpdateOperation)
-            and not isinstance(event.code, codetools.FunctionCode)):
+        if isinstance(event, codetools.UpdateOperation) and not isinstance(
+            event.code, codetools.FunctionCode
+        ):
             return
         else:
             sess.queue(

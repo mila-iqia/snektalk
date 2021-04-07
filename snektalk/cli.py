@@ -93,6 +93,7 @@ def cli():
                 if pattern(spec.origin):
                     registry.prepare("__main__", spec.origin)
                 mod = ModuleType("__main__")
+
                 def run():
                     snek_runpy.run_module(module, module_object=mod)
 
@@ -104,6 +105,7 @@ def cli():
                 registry.prepare("__main__", path)
             sys.argv[1:] = argv
             mod = ModuleType("__main__")
+
             def run():
                 snek_runpy.run_path(path, module_object=mod)
 
