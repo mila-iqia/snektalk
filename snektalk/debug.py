@@ -43,15 +43,19 @@ class SnekTalkDb(bdb.Bdb):
         except Exception as exc:
             cf, defn = None, None
         if defn is None:
-            self.nav.js.update(
-                f"'Could not find source code for {frame.f_code.co_name}'"
+            self.session.add_nav_action(
+                lambda: self.nav.js.update(
+                    f"'Could not find source code for {frame.f_code.co_name}'"
+                )
             )
         else:
-            self.nav.js.update(
-                defn.codestring,
-                format_libpath(defn.filename),
-                defn.stashed.lineno,
-                frame.f_lineno,
+            self.session.add_nav_action(
+                lambda: self.nav.js.update(
+                    defn.codestring,
+                    format_libpath(defn.filename),
+                    defn.stashed.lineno,
+                    frame.f_lineno,
+                )
             )
 
     def get_frame(self):

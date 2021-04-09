@@ -156,11 +156,8 @@ class Session:
             current.release(len(self.in_queue))
 
     def _current_prompt(self):
-        prompt, nav = self.navs.get(self.owner, (None, None))
-        if prompt:
-            self.set_prompt(prompt)
-        if nav:
-            self.set_nav(nav)
+        for act in self.navs.get(self.owner, []):
+            act()
 
     def push_owner(self, thread):
         self._acquire_all()
@@ -240,22 +237,24 @@ class Session:
     ################
 
     def set_prompt(self, prompt):
-        if prompt != self.last_prompt:
-            self.queue(command="set_mode", html=prompt)
-            self.last_prompt = prompt
+        self.add_nav_action(
+            lambda: self.queue(command="set_mode", html=prompt)
+        )
 
     def set_nav(self, nav):
-        if nav != self.last_nav:
-            self.queue(command="set_nav", value=hrepr(nav))
-            self.last_nav = nav
+        self.add_nav_action(
+            lambda: self.queue(command="set_nav", value=hrepr(nav))
+        )
+
+    def add_nav_action(self, action):
+        self.navs.setdefault(NamedThreads.current(), []).append(action)
 
     @contextmanager
     def prompt(self, prompt="", nav=H.span()):
+        self.set_prompt(prompt)
+        self.set_nav(nav)
         self._clean_owners()
-        this_thread = NamedThreads.current()
-        self.navs[this_thread] = (prompt, nav)
-        if this_thread is self.owner:
-            self._current_prompt()
+        self._current_prompt()
         expr = self.next()
         with self.set_context():
             with new_evalid():
