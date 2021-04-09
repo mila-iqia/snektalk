@@ -70,7 +70,8 @@ def evaluate(expr, glb, lcl):
 
 
 class Evaluator:
-    def __init__(self, module, glb, lcl, session):
+    def __init__(self, module, glb, lcl, session, prompt=">>>"):
+        self.prompt = prompt
         self.session = session
         if module is None:
             module = ModuleType("__main__")
@@ -194,6 +195,28 @@ class Evaluator:
 
         threads.run_in_thread(run, session=current_session())
 
+    def command_attach(self, expr, glb, lcl):
+        tname = expr.strip()
+        self.session.queue(
+            command="echo", value=f"/attach {tname}", process=False
+        )
+        if tname == "main":
+            current_session().push_owner(None)
+        elif tname in threads.threads:
+            thread = threads.threads[tname]
+            current_session().push_owner(thread)
+        else:
+            self.session.queue(
+                command="result",
+                value=f"No thread named {tname}"
+                if tname
+                else "Please provide the name of the thread to attach to",
+                type="exception",
+            )
+
+    def command_detach(self, expr, glb, lcl):
+        current_session().pop_owner()
+
     def command_kill(self, expr, glb, lcl):
         tname = expr.strip()
         self.session.queue(
@@ -267,7 +290,7 @@ class Evaluator:
         )
         try:
             while True:
-                prompt = H.span["snek-input-mode-python"](">>>")
+                prompt = H.span["snek-input-mode-python"](self.prompt)
                 with self.session.prompt(prompt) as cmd:
                     if cmd["command"] == "expr":
                         expr = cmd["expr"]

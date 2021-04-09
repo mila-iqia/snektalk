@@ -7,7 +7,7 @@ import os
 import random
 import threading
 import traceback
-from collections import deque
+from collections import defaultdict, deque
 from contextlib import contextmanager
 from contextvars import ContextVar
 from itertools import count
@@ -24,6 +24,10 @@ class ThreadKilledException(Exception):
 
 
 class KillableThread(threading.Thread):
+    @property
+    def dead(self):
+        return not self.is_alive() or getattr(self, "_dead", False)
+
     def kill(self):
         ctypes.pythonapi.PyThreadState_SetAsyncExc(
             ctypes.c_long(self.ident), ctypes.py_object(ThreadKilledException)
@@ -31,6 +35,14 @@ class KillableThread(threading.Thread):
 
 
 class NamedThreads:
+    @classmethod
+    def current(cls):
+        thread = threading.current_thread()
+        if isinstance(thread, KillableThread):
+            return thread
+        else:
+            return None
+
     def __init__(self):
         self.words = [
             word
@@ -61,6 +73,8 @@ class NamedThreads:
                     except Exception as e:
                         session.queue_result(e, type="exception")
                     finally:
+                        thread._dead = True
+                        session._clean_owners()
                         del self.threads[word]
                         self.words.append(word)
                         session.queue_result(
@@ -112,13 +126,54 @@ class Session:
         self.last_nav = ""
         self.in_queue = deque()
         self.out_queue = deque()
-        self.semaphore = threading.Semaphore(value=0)
+        self.semaphores = defaultdict(lambda: threading.Semaphore(value=0))
+        self.navs = {}
+        self.owners = []
         self._token = None
         self._tokenp = None
 
     #############
     # Utilities #
     #############
+
+    @property
+    def owner(self):
+        return self.owners[-1] if self.owners else None
+
+    def _clean_owners(self):
+        while self.owners and (curr := self.owners[-1]) and curr.dead:
+            del self.navs[curr]
+            self.pop_owner()
+
+    def _acquire_all(self):
+        current = self.semaphores[self.owner]
+        while current.acquire(blocking=False):
+            pass
+
+    def _release_all(self):
+        current = self.semaphores[self.owner]
+        if self.in_queue:
+            current.release(len(self.in_queue))
+
+    def _current_prompt(self):
+        prompt, nav = self.navs.get(self.owner, (None, None))
+        if prompt:
+            self.set_prompt(prompt)
+        if nav:
+            self.set_nav(nav)
+
+    def push_owner(self, thread):
+        self._acquire_all()
+        self.owners.append(thread)
+        self._release_all()
+        self._current_prompt()
+
+    def pop_owner(self):
+        self._acquire_all()
+        if self.owners:
+            self.owners.pop()
+        self._release_all()
+        self._current_prompt()
 
     def enter(self, capture_print=True):
         self._token = _current_session.set(self)
@@ -187,6 +242,7 @@ class Session:
     def set_prompt(self, prompt):
         if prompt != self.last_prompt:
             self.queue(command="set_mode", html=prompt)
+            self.last_prompt = prompt
 
     def set_nav(self, nav):
         if nav != self.last_nav:
@@ -195,15 +251,18 @@ class Session:
 
     @contextmanager
     def prompt(self, prompt="", nav=H.span()):
-        self.set_prompt(prompt)
-        self.set_nav(nav)
+        self._clean_owners()
+        this_thread = NamedThreads.current()
+        self.navs[this_thread] = (prompt, nav)
+        if this_thread is self.owner:
+            self._current_prompt()
         expr = self.next()
         with self.set_context():
             with new_evalid():
                 yield expr
 
     def next(self):
-        self.semaphore.acquire()
+        self.semaphores[NamedThreads.current()].acquire()
         return self.in_queue.popleft()
 
     ###########
@@ -270,7 +329,7 @@ class Session:
 
     def submit(self, data):
         self.in_queue.append(data)
-        self.semaphore.release()
+        self.semaphores[self.owner].release()
 
     async def recv(self, **command):
         cmd = command.pop("command", "none")

@@ -249,6 +249,7 @@ class Interactor:
                     }}
                     else {{
                         elem.id = '{self.jsid}';
+                        requirejs.undef('{self.jsid}');
                         define(
                             '{self.jsid}',
                             ['{self.js_constructor}'],
