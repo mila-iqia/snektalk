@@ -1,14 +1,14 @@
 import builtins
 import os
 import types
-from types import FunctionType, MethodType, ModuleType
+from types import FunctionType, MethodType, ModuleType, SimpleNamespace
 
 from hrepr import H, Hrepr, Tag, hrepr, standard_html
 
 from .debug import SnekTalkDb
 from .feat.edit import edit
 from .session import current_print_session, current_session
-from .utils import format_libpath, join, represents, sktk_hjson
+from .utils import Importer, format_libpath, join, mod, represents, sktk_hjson
 
 ##################
 # SnekTalk print #
@@ -322,6 +322,9 @@ class SnekTalkHrepr(Hrepr):
 #####################################
 
 
+sktk = SimpleNamespace(edit=edit, help=None, imp=Importer(), mod=mod,)
+
+
 def snekbreakpoint():
     SnekTalkDb().set_trace()
 
@@ -332,6 +335,7 @@ def inject():
     builtins.breakpoint = snekbreakpoint
     builtins.hdir = hdir
     builtins.print0 = orig_print
+    builtins.sktk = sktk
     hrepr.configure(
         mixins=SnekTalkHrepr,
         postprocess=wrap_onclick,

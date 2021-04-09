@@ -57,6 +57,31 @@ def format_libpath(path):
         return path
 
 
+class Importer:
+    def __getattr__(self, module_name):
+        return __import__(module_name)
+
+
+class ObjectFields:
+    def __init__(self, cls, **fields):
+        self.cls = cls
+        self.fields = fields
+
+    def __eq__(self, other):
+        return (
+            type(self) is type(other)
+            and self.cls == other.cls
+            and self.fields == other.fields
+        )
+
+
+def mod(cls):
+    def f(**fields):
+        return ObjectFields(cls, **fields)
+
+    return f
+
+
 ###########################
 # Click/shift-click logic #
 ###########################
