@@ -1,14 +1,9 @@
 import ast
-import ctypes
 import functools
-import os
-import random
 import re
 import subprocess
 import sys
-import threading
 import time
-from itertools import count
 from types import ModuleType
 
 from hrepr import H
@@ -16,73 +11,10 @@ from jurigged import CodeFile, registry
 from jurigged.recode import virtual_file
 
 from .feat.edit import edit
-from .session import current_session, new_evalid
+from .session import current_session, new_evalid, threads
 from .version import version
 
 cmd_rx = re.compile(r"/([^ ]+)( .*)?")
-
-
-class ThreadKilledException(Exception):
-    pass
-
-
-class KillableThread(threading.Thread):
-    def kill(self):
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(
-            ctypes.c_long(self.ident), ctypes.py_object(ThreadKilledException)
-        )
-
-
-class NamedThreads:
-    def __init__(self):
-        self.words = [
-            word
-            for word in open(
-                os.path.join(os.path.dirname(__file__), "words.txt")
-            )
-            .read()
-            .split("\n")
-            if word
-        ]
-        random.shuffle(self.words)
-        self.threads = {}
-        self.count = count(1)
-
-    def run_in_thread(self, fn, session=None):
-        def run():
-            reason = " finished"
-            self.threads[word] = thread
-            with session.set_context():
-                with new_evalid():
-                    session.queue_result(
-                        H.div("Starting thread ", H.strong(word)), type="info",
-                    )
-                    try:
-                        fn()
-                    except ThreadKilledException:
-                        reason = " killed"
-                    except Exception as e:
-                        session.queue_result(e, type="exception")
-                    finally:
-                        del self.threads[word]
-                        self.words.append(word)
-                        session.queue_result(
-                            H.div("Thread ", H.strong(word), reason),
-                            type="info",
-                        )
-
-        session = session or current_session()
-        thread = KillableThread(target=run, daemon=True)
-
-        if not self.words:
-            self.words.append(f"t{next(self.count)}")
-        word = self.words.pop()
-
-        thread.start()
-        return word, thread
-
-
-threads = NamedThreads()
 
 
 class StopEvaluator(Exception):
@@ -260,7 +192,7 @@ class Evaluator:
             self.session.blt["_"] = result
             self.session.queue_result(result, type=typ)
 
-        threads.run_in_thread(run)
+        threads.run_in_thread(run, session=current_session())
 
     def command_kill(self, expr, glb, lcl):
         tname = expr.strip()
