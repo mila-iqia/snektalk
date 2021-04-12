@@ -669,6 +669,7 @@ class Repl {
         if (prbox === null) {
             prbox = document.createElement("div");
             prbox.id = "pr-eval-" + evalid;
+            prbox.setAttribute("pinnable", "");
             this.pane.appendChild(prbox);
         }
         if (data.type === "statement") { }
