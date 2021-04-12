@@ -14,7 +14,8 @@ from .feat.edit import edit
 from .session import current_session, new_evalid, threads
 from .version import version
 
-cmd_rx = re.compile(r"/([^ ]+)( .*)?")
+
+cmd_rx = re.compile(r"/([^ \n]+)([ \n].*)?", re.MULTILINE | re.DOTALL)
 
 
 class StopEvaluator(Exception):
@@ -215,6 +216,10 @@ class Evaluator:
             )
 
     def command_detach(self, expr, glb, lcl):
+        self.session.queue(
+            command="echo", value=f"/detach", process=False
+        )
+        assert not expr.strip()
         current_session().pop_owner()
 
     def command_kill(self, expr, glb, lcl):
