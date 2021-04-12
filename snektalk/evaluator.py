@@ -216,9 +216,7 @@ class Evaluator:
             )
 
     def command_detach(self, expr, glb, lcl):
-        self.session.queue(
-            command="echo", value=f"/detach", process=False
-        )
+        self.session.queue(command="echo", value=f"/detach", process=False)
         assert not expr.strip()
         current_session().pop_owner()
 

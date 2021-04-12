@@ -237,9 +237,7 @@ class Session:
     ################
 
     def set_prompt(self, prompt):
-        self.add_nav_action(
-            lambda: self.queue(command="set_mode", html=prompt)
-        )
+        self.add_nav_action(lambda: self.queue(command="set_mode", html=prompt))
 
     def set_nav(self, nav):
         self.add_nav_action(
