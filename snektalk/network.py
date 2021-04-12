@@ -45,14 +45,13 @@ def connect_to_existing(addr, port, sock):
     if ":" in addr:
         addr, jump_port = addr.split(":")
     else:
-        jump_port = "22"
+        jump_port = None
 
     print("Collecting information about remote socket")
     cmd = [
         "ssh",
         addr,
-        "-p",
-        jump_port,
+        *(["-p", jump_port] if jump_port else []),
         f"pwd; echo $USER; hostname; cat {sock}.host",
     ]
     output = subprocess.check_output(cmd)
@@ -91,7 +90,7 @@ def connect_to_existing(addr, port, sock):
             "-nNCL",
             f"{localhost}:{port}:{location}",
             "-J",
-            f"{addr}:{jump_port}",
+            f"{addr}:{jump_port}" if jump_port else addr,
             sockhost,
         ]
 
