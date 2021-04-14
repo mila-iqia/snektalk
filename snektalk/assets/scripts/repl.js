@@ -156,6 +156,7 @@ class Repl {
         target.onclick = this.$globalClickEvent.bind(this);
         window.onkeydown = this.$globalKDEvent.bind(this);
         window.$$SKTK = this.sktk.bind(this);
+        window.snektalk = this;
         this.$currid = 0;
         this.$responseMap = {};
         exports.mainRepl = this;
