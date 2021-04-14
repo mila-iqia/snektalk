@@ -14,7 +14,6 @@ from .feat.edit import edit
 from .session import current_session, new_evalid, threads
 from .version import version
 
-
 cmd_rx = re.compile(r"/([^ \n]+)([ \n].*)?", re.MULTILINE | re.DOTALL)
 
 
@@ -195,52 +194,6 @@ class Evaluator:
             self.session.queue_result(result, type=typ)
 
         threads.run_in_thread(run, session=current_session())
-
-    def command_attach(self, expr, glb, lcl):
-        tname = expr.strip()
-        self.session.queue(
-            command="echo", value=f"/attach {tname}", process=False
-        )
-        if tname == "main":
-            current_session().push_owner(None)
-        elif tname in threads.threads:
-            thread = threads.threads[tname]
-            current_session().push_owner(thread)
-        else:
-            self.session.queue(
-                command="result",
-                value=f"No thread named {tname}"
-                if tname
-                else "Please provide the name of the thread to attach to",
-                type="exception",
-            )
-
-    def command_detach(self, expr, glb, lcl):
-        self.session.queue(command="echo", value=f"/detach", process=False)
-        assert not expr.strip()
-        current_session().pop_owner()
-
-    def command_kill(self, expr, glb, lcl):
-        tname = expr.strip()
-        self.session.queue(
-            command="echo", value=f"/kill {tname}", process=False
-        )
-        if tname in threads.threads:
-            thread = threads.threads[tname]
-            thread.kill()
-            self.session.queue(
-                command="result",
-                value=f"Sent an exception to {tname}. It should terminate as soon as possible.",
-                type="print",
-            )
-        else:
-            self.session.queue(
-                command="result",
-                value=f"No thread named {tname}"
-                if tname
-                else "Please provide the name of the thread to kill",
-                type="exception",
-            )
 
     def command_quit(self, expr, glb, lcl):
         self.session.queue_result(H.div("/quit"), type="echo")

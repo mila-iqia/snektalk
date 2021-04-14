@@ -5,6 +5,7 @@ import inspect
 import json
 import os
 import random
+import re
 import threading
 import traceback
 from collections import defaultdict, deque
@@ -17,6 +18,28 @@ from hrepr import H, Tag, hrepr
 from .registry import callback_registry
 
 _c = count(1)
+
+
+class NoPatternException(Exception):
+    pass
+
+
+class CommandDispatcher:
+    def __init__(self, patterns):
+        self.patterns = [
+            (re.compile(pattern, re.MULTILINE | re.DOTALL), fn)
+            for pattern, fn in patterns.items()
+        ]
+
+    def __call__(self, expr):
+        for (pattern, fn) in self.patterns:
+            if m := pattern.fullmatch(expr):
+                try:
+                    return fn(m[0], *m.groups())
+                except NotImplementedError:
+                    continue
+        else:
+            raise NoPatternException(f"'{expr}' matches no known pattern")
 
 
 class ThreadKilledException(Exception):
@@ -129,6 +152,13 @@ class Session:
         self.semaphores = defaultdict(lambda: threading.Semaphore(value=0))
         self.navs = {}
         self.owners = []
+        self.dispatch = CommandDispatcher(
+            {
+                "/attach[ \n]?(.*)": self.submit_command_attach,
+                "/detach[ \n]?(.*)": self.submit_command_detach,
+                "/kill[ \n]?(.*)": self.submit_command_kill,
+            }
+        )
         self._token = None
         self._tokenp = None
 
@@ -324,6 +354,48 @@ class Session:
     # Commands #
     ############
 
+    def submit_command_attach(self, expr, tname):
+        tname = tname.strip()
+        self.queue(command="echo", value=expr, process=False)
+        if tname == "main":
+            self.push_owner(None)
+        elif tname in threads.threads:
+            thread = threads.threads[tname]
+            self.push_owner(thread)
+        else:
+            self.queue(
+                command="result",
+                value=f"No thread named {tname}"
+                if tname
+                else "Please provide the name of the thread to attach to",
+                type="exception",
+            )
+
+    def submit_command_detach(self, expr, arg):
+        self.queue(command="echo", value=expr, process=False)
+        assert not arg.strip()
+        self.pop_owner()
+
+    def submit_command_kill(self, expr, tname):
+        tname = tname.strip()
+        self.queue(command="echo", value=expr, process=False)
+        if tname in threads.threads:
+            thread = threads.threads[tname]
+            thread.kill()
+            self.queue(
+                command="result",
+                value=f"Sent an exception to {tname}. It should terminate as soon as possible.",
+                type="print",
+            )
+        else:
+            self.queue(
+                command="result",
+                value=f"No thread named {tname}"
+                if tname
+                else "Please provide the name of the thread to kill",
+                type="exception",
+            )
+
     def submit(self, data):
         self.in_queue.append(data)
         self.semaphores[self.owner].release()
@@ -334,7 +406,10 @@ class Session:
         await meth(**command)
 
     async def command_submit(self, *, expr):
-        self.submit({"command": "expr", "expr": expr})
+        try:
+            self.dispatch(expr)
+        except NoPatternException:
+            self.submit({"command": "expr", "expr": expr})
 
     async def command_callback(self, *, id, response_id, arguments):
         try:
