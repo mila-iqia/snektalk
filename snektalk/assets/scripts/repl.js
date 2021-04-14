@@ -722,6 +722,10 @@ class Repl {
         this.inputMode.innerHTML = data.html;
     }
 
+    recv_add_history(data) {
+        this.history.push.apply(this.history, data["history"].reverse());
+    }
+
     recv_bad(data) {
         console.error("Received an unknown command:", data.command);
     }

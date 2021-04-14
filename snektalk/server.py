@@ -13,6 +13,7 @@ import jurigged
 from jurigged import codetools
 from sanic import Sanic, response
 
+from .config import get_config_path
 from .network import create_inet, create_socket
 from .repr import inject
 from .session import Session
@@ -88,13 +89,14 @@ def _launch(port=None, sock=None, open_browser=True, template={}, sess=None):
             webbrowser.open(f"http://{host}:{port}/")
 
     atexit.register(app.stop)
+    atexit.register(sess.atexit)
     if port is not None:
         print(f"Start server at: http://{host}:{port}/")
     app.run(sock=sock, register_sys_signals=False)
 
 
 def serve(watch_args=None, **kwargs):
-    sess = Session()
+    sess = Session(history_file=get_config_path("history.json"))
     if watch_args is not None:
         jurigged.watch(**watch_args, logger=status_logger(sess))
 

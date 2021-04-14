@@ -15,6 +15,7 @@ from itertools import count
 
 from hrepr import H, Tag, hrepr
 
+from .config import mayread, maywrite
 from .registry import callback_registry
 
 _c = count(1)
@@ -139,7 +140,7 @@ def new_evalid():
 
 
 class Session:
-    def __init__(self, socket=None):
+    def __init__(self, socket=None, history_file=None):
         self.blt = vars(builtins)
         self.idmap = {}
         self.varcount = count(1)
@@ -152,6 +153,8 @@ class Session:
         self.semaphores = defaultdict(lambda: threading.Semaphore(value=0))
         self.navs = {}
         self.owners = []
+        self.history_file = history_file
+        self.history = mayread(history_file, default=[])
         self.dispatch = CommandDispatcher(
             {
                 "/attach[ \n]?(.*)": self.submit_command_attach,
@@ -302,6 +305,7 @@ class Session:
         self.sent_resources = set()
         while self.out_queue:
             self.schedule(self.send(**self.out_queue.popleft()))
+        self.queue(command="add_history", history=self.history)
         self.submit({"command": "noop"})
 
     async def send(self, process=True, **command):
@@ -406,6 +410,8 @@ class Session:
         await meth(**command)
 
     async def command_submit(self, *, expr):
+        if expr.strip():
+            self.history.append(expr)
         try:
             self.dispatch(expr)
         except NoPatternException:
@@ -445,3 +451,6 @@ class Session:
                 },
                 response_id=response_id,
             )
+
+    def atexit(self):
+        maywrite(self.history_file, self.history[:1000])
