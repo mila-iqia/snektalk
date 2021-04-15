@@ -50,6 +50,7 @@ def _launch(port=None, sock=None, open_browser=True, template={}, sess=None):
     app.static("/lib/", f"{assets_path}/lib/")
     app.static("/scripts/", f"{assets_path}/scripts/")
     app.static("/style/", f"{assets_path}/style/")
+    app.static("/fs/", "/")
 
     @app.route("/")
     async def index(request):

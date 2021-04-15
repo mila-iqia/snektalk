@@ -4,6 +4,7 @@ import types
 from types import FunctionType, MethodType, ModuleType, SimpleNamespace
 
 from hrepr import H, Hrepr, Tag, hrepr, standard_html
+from hrepr.std import _extract_as
 
 from .debug import SnekTalkDb
 from .feat.edit import edit
@@ -362,6 +363,25 @@ def snekbreakpoint():
     SnekTalkDb().set_trace()
 
 
+@standard_html.variant(
+    initial_state={"hjson": sktk_hjson, "requirejs_resources": []}
+)
+def sktk_html(self, node: type(H.include)):
+    _, children, data = _extract_as(self, node, "include", path=None, type=None)
+    if data.type is None or data.path is None:
+        raise TypeError("H.include must have a type and a path")
+
+    path = os.path.expanduser(data.path)
+    path = os.path.abspath(path)
+
+    if data.type == "text/css":
+        return H.link(rel="stylesheet", href=f"/fs{path}")
+    elif data.type == "text/javascript":
+        return H.script(type="text/javascript", src=f"/fs{path}")
+    else:
+        raise TypeError(f"Cannot include type '{data.type}'")
+
+
 def inject():
     builtins.help = help_placeholder
     builtins.print = snekprint_override
@@ -370,9 +390,5 @@ def inject():
     builtins.print0 = orig_print
     builtins.sktk = sktk
     hrepr.configure(
-        mixins=SnekTalkHrepr,
-        postprocess=wrap_onclick,
-        backend=standard_html.copy(
-            initial_state={"hjson": sktk_hjson, "requirejs_resources": []}
-        ),
+        mixins=SnekTalkHrepr, postprocess=wrap_onclick, backend=sktk_html,
     )
