@@ -93,6 +93,7 @@ body {
     min-height: 1.5em;
     text-align: right;
     color: #888;
+    cursor: pointer;
 }
 
 .snek-status-normal {

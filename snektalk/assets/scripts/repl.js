@@ -141,6 +141,7 @@ class Repl {
         this.inputBox = target.querySelector(".snek-input");
         this.inputMode = target.querySelector(".snek-input-mode");
         this.statusBar = target.querySelector(".snek-status-bar");
+        this.statusBar.onclick = () => this.cmd_status("/status")
         this.nav = target.querySelector(".snek-nav");
         this.statusHistory = document.createElement("div");
         this.statusHistory.className = "snek-status-history";
