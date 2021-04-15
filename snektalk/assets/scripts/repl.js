@@ -679,6 +679,33 @@ class Repl {
         }
     }
 
+    recv_fill(data) {
+        let elem = this.reify(data.value);
+        let target = document.getElementById(data.target);
+        while (target.firstChild) {
+            target.removeChild(target.firstChild);
+        }
+        target.appendChild(elem);
+    }
+
+    recv_insert(data) {
+        let elem = this.reify(data.value);
+        let target = document.getElementById(data.target);
+        if (data.index === undefined || data.index === null) {
+            target.appendChild(elem);
+        }
+        else {
+            target.insertBefore(elem, target.children[data.index]);
+        }
+    }
+
+    recv_clear(data) {
+        let target = document.getElementById(data.target);
+        while (target.firstChild) {
+            target.removeChild(target.firstChild);
+        }
+    }
+
     recv_echo(data) {
         let ed = this.read_only_editor(data.value.trimEnd(), data.language || "python");
         let elem = document.createElement("div");

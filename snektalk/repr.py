@@ -26,10 +26,18 @@ class PrintSequence(tuple):
         )
 
 
-def snekprint(*args, toplevel=False, **kwargs):
+def snekprint(*args, toplevel=False, to=None, **kwargs):
     sess = current_print_session()
     if sess is None:
         orig_print(*args)
+    elif to is not None:
+        if toplevel:
+            html = hrepr(*args, **kwargs)
+        else:
+            html = hrepr(PrintSequence(args), **kwargs)
+        sess.queue(
+            command="insert", value=html, target=to,
+        )
     else:
         if all(isinstance(arg, str) for arg in args):
             html = H.div["snek-print-str"](" ".join(args))
@@ -50,6 +58,23 @@ def snekprint_override(*args, toplevel=False, file=None, std=False, **kwargs):
     else:
         snekprint(*args, toplevel=toplevel, **kwargs)
     builtins.print = snekprint_override
+
+
+def insert_at(target, value, index=None, **kwargs):
+    html = hrepr(value, **kwargs)
+    sess = current_session()
+    sess.queue(command="insert", value=html, target=target, index=index)
+
+
+def fill_at(target, value, **kwargs):
+    html = hrepr(value, **kwargs)
+    sess = current_session()
+    sess.queue(command="fill", value=html, target=target)
+
+
+def clear_at(target):
+    sess = current_session()
+    sess.queue(command="clear", target=target)
 
 
 def help_placeholder(*args, **kwargs):
@@ -322,7 +347,15 @@ class SnekTalkHrepr(Hrepr):
 #####################################
 
 
-sktk = SimpleNamespace(edit=edit, help=None, imp=Importer(), mod=mod,)
+sktk = SimpleNamespace(
+    edit=edit,
+    help=None,
+    imp=Importer(),
+    mod=mod,
+    fill_at=fill_at,
+    insert_at=insert_at,
+    clear_at=clear_at,
+)
 
 
 def snekbreakpoint():
