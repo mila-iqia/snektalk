@@ -139,8 +139,27 @@ def new_evalid():
         _current_evalid.reset(token)
 
 
+class Lib:
+    def __init__(self):
+        self._export = None
+
+    def export(self):
+        if self._export:
+            return self._export
+
+        self._export = rval = {}
+        for method_name in dir(type(self)):
+            if method_name.startswith("method_"):
+                method = getattr(self, method_name)
+                method_id = callback_registry.register(method)
+                rval[method_name[7:]] = method_id
+
+        return rval
+
+
 class Session:
     def __init__(self, socket=None, history_file=None):
+        self.lib = Lib()
         self.blt = vars(builtins)
         self.idmap = {}
         self.varcount = count(1)
@@ -306,6 +325,7 @@ class Session:
         while self.out_queue:
             self.schedule(self.send(**self.out_queue.popleft()))
         self.queue(command="add_history", history=self.history)
+        self.queue(command="set_lib", lib=self.lib.export())
         self.submit({"command": "noop"})
 
     async def send(self, process=True, **command):
@@ -430,7 +450,7 @@ class Session:
 
         try:
             with self.set_context():
-                if inspect.isawaitable(cb):
+                if inspect.isawaitable(cb) or inspect.iscoroutinefunction(cb):
                     result = await cb(*arguments)
                 else:
                     result = cb(*arguments)

@@ -141,6 +141,7 @@ class Repl {
     constructor(target) {
         this.container = target;
         this.options = {};
+        this.lib = {};
         this.pane = target.querySelector(".snek-pane");
         this.outerPane = target.querySelector(".snek-outer-pane");
         this.pinpane = target.querySelector(".snek-pin-pane");
@@ -241,9 +242,8 @@ class Repl {
         }
     }
 
-    sktk(id, ...args) {
-        // Call a Python function by id
-        const exec = async (...args) => {
+    get_external(id) {
+        return async (...args) => {
             let response_id = this.$currid++;
             let response = new Promise(
                 (resolve, reject) => {
@@ -258,7 +258,10 @@ class Repl {
             });
             return await response;
         }
+    }
 
+    sktk(id, ...args) {
+        // Call a Python function by id
         const execNow = async () => {
             try {
                 await exec({
@@ -285,7 +288,7 @@ class Repl {
         if (evt === undefined || evt.type === "load") {
             // If not in an event handler, we return the execution
             // function directly
-            return exec;
+            return this.get_external(id);
         }
         else {
             // The call is in an event handler like onclick, for example
@@ -764,6 +767,12 @@ class Repl {
 
     recv_add_history(data) {
         this.history.push.apply(this.history, data["history"].reverse());
+    }
+
+    recv_set_lib(data) {
+        for (let key in data.lib) {
+            this.lib[key] = this.get_external(data.lib[key]);
+        }
     }
 
     recv_bad(data) {
