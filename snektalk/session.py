@@ -47,15 +47,22 @@ class ThreadKilledException(Exception):
     pass
 
 
+class SnektalkInterrupt(Exception):
+    pass
+
+
+def kill_thread(thread, exctype=ThreadKilledException):
+    ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        ctypes.c_long(thread.ident), ctypes.py_object(exctype)
+    )
+
+
 class KillableThread(threading.Thread):
     @property
     def dead(self):
         return not self.is_alive() or getattr(self, "_dead", False)
 
-    def kill(self):
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(
-            ctypes.c_long(self.ident), ctypes.py_object(ThreadKilledException)
-        )
+    kill = kill_thread
 
 
 class NamedThreads:
@@ -140,8 +147,13 @@ def new_evalid():
 
 
 class Lib:
-    def __init__(self):
+    def __init__(self, session):
         self._export = None
+        self.session = session
+
+    def method_stop(self):
+        thread = self.session.owner or threading.main_thread()
+        kill_thread(thread, SnektalkInterrupt)
 
     def export(self):
         if self._export:
@@ -159,7 +171,7 @@ class Lib:
 
 class Session:
     def __init__(self, socket=None, history_file=None):
-        self.lib = Lib()
+        self.lib = Lib(self)
         self.blt = vars(builtins)
         self.idmap = {}
         self.varcount = count(1)

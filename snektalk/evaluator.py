@@ -11,7 +11,7 @@ from jurigged import CodeFile, registry
 from jurigged.recode import virtual_file
 
 from .feat.edit import edit
-from .session import current_session, new_evalid, threads
+from .session import current_session, new_evalid, threads, SnektalkInterrupt
 from .version import version
 
 cmd_rx = re.compile(r"/([^ \n]+)([ \n].*)?", re.MULTILINE | re.DOTALL)
@@ -246,14 +246,20 @@ class Evaluator:
         )
         try:
             while True:
-                prompt = H.span["snek-input-mode-python"](self.prompt)
-                with self.session.prompt(prompt) as cmd:
-                    if cmd["command"] == "expr":
-                        expr = cmd["expr"]
-                        if expr.strip():
-                            self.dispatch(expr)
-                    elif cmd["command"] == "noop":
-                        pass
+                try:
+                    prompt = H.span["snek-input-mode-python"](self.prompt)
+                    with self.session.prompt(prompt) as cmd:
+                        if cmd["command"] == "expr":
+                            expr = cmd["expr"]
+                            if expr.strip():
+                                try:
+                                    self.dispatch(expr)
+                                except SnektalkInterrupt as exc:
+                                    print(exc)
+                        elif cmd["command"] == "noop":
+                            pass
+                except SnektalkInterrupt:
+                    continue
         except StopEvaluator:
             return
 

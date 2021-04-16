@@ -485,6 +485,24 @@ class Repl {
             () => { this.editor.trigger(null, "editor.action.commentLine"); },
         );
 
+        editor.addCommand(
+            KM.chord(KM.CtrlCmd | KC.KEY_K, KM.CtrlCmd | KC.KEY_K),
+            () => {
+                this.editor.setValue("");
+                this.lib.stop();
+            }
+        );
+
+        if (isMac) {
+            editor.addCommand(
+                KM.WinCtrl | KC.KEY_C,
+                () => {
+                    this.editor.setValue("");
+                    this.lib.stop();
+                }
+            );
+        }
+
         this.editor = editor;
     }
 
