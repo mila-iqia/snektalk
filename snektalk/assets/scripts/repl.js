@@ -262,6 +262,8 @@ class Repl {
 
     sktk(id, ...args) {
         // Call a Python function by id
+        const exec = this.get_external(id);
+
         const execNow = async () => {
             try {
                 await exec({
@@ -288,7 +290,7 @@ class Repl {
         if (evt === undefined || evt.type === "load") {
             // If not in an event handler, we return the execution
             // function directly
-            return this.get_external(id);
+            return exec;
         }
         else {
             // The call is in an event handler like onclick, for example
@@ -790,6 +792,18 @@ class Repl {
     recv_set_lib(data) {
         for (let key in data.lib) {
             this.lib[key] = this.get_external(data.lib[key]);
+        }
+    }
+
+    recv_broadcast(data) {
+        let selector = `*[channel-${data.key}=""]`
+        if (data.subkey) {
+            selector = `${selector}, *[channel-${data.key}="${data.subkey}"]`
+        }
+        for (let element of document.querySelectorAll(selector)) {
+            if (element.onbroadcast) {
+                element.onbroadcast(data);
+            }
         }
     }
 
