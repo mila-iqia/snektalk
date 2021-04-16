@@ -140,7 +140,7 @@ toml = ["toml"]
 
 [[package]]
 name = "flake8"
-version = "3.9.0"
+version = "3.9.1"
 description = "the modular source code checker: pep8 pyflakes and co"
 category = "dev"
 optional = false
@@ -161,7 +161,7 @@ python-versions = "*"
 
 [[package]]
 name = "hrepr"
-version = "0.3.10"
+version = "0.3.11"
 description = "Extensible HTML representation for Python objects."
 category = "main"
 optional = false
@@ -534,7 +534,7 @@ python-versions = ">=3.6.1"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "0458417b8bee19ae176936faef9a4149e1c95ef801942016229e8e1192c9c8c2"
+content-hash = "801c35cdbe61cfade29ab0a61e496daa90acb1aa927f8a1561ea3f96a982cc45"
 
 [metadata.files]
 aiofiles = [
@@ -639,16 +639,16 @@ coverage = [
     {file = "coverage-5.5.tar.gz", hash = "sha256:ebe78fe9a0e874362175b02371bdfbee64d8edc42a044253ddf4ee7d3c15212c"},
 ]
 flake8 = [
-    {file = "flake8-3.9.0-py2.py3-none-any.whl", hash = "sha256:12d05ab02614b6aee8df7c36b97d1a3b2372761222b19b58621355e82acddcff"},
-    {file = "flake8-3.9.0.tar.gz", hash = "sha256:78873e372b12b093da7b5e5ed302e8ad9e988b38b063b61ad937f26ca58fc5f0"},
+    {file = "flake8-3.9.1-py2.py3-none-any.whl", hash = "sha256:3b9f848952dddccf635be78098ca75010f073bfe14d2c6bda867154bea728d2a"},
+    {file = "flake8-3.9.1.tar.gz", hash = "sha256:1aa8990be1e689d96c745c5682b687ea49f2e05a443aff1f8251092b0014e378"},
 ]
 h11 = [
     {file = "h11-0.9.0-py2.py3-none-any.whl", hash = "sha256:4bc6d6a1238b7615b266ada57e0618568066f57dd6fa967d1290ec9309b2f2f1"},
     {file = "h11-0.9.0.tar.gz", hash = "sha256:33d4bca7be0fa039f4e84d50ab00531047e53d6ee8ffbc83501ea602c169cae1"},
 ]
 hrepr = [
-    {file = "hrepr-0.3.10-py3-none-any.whl", hash = "sha256:2cdbe3c8deb3f3612e6deeec5ab5539227ebf51c5a506415d715976d648f6711"},
-    {file = "hrepr-0.3.10.tar.gz", hash = "sha256:547bda259cbdb1286d9d6ba019048bd61d416ae5e2aecd7fe3d485d204fb1f25"},
+    {file = "hrepr-0.3.11-py3-none-any.whl", hash = "sha256:16827a2d54e47e6e01f4d5d98a05e2ee13a31334aae45d11224d13b8a27ef860"},
+    {file = "hrepr-0.3.11.tar.gz", hash = "sha256:c45f062916719817931e621b00b75bf8c61d2c269902a046b862c1fef4e39fe6"},
 ]
 httpcore = [
     {file = "httpcore-0.11.1-py3-none-any.whl", hash = "sha256:72cfaa461dbdc262943ff4c9abf5b195391a03cdcc152e636adb4239b15e77e1"},

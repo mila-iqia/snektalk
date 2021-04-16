@@ -15,7 +15,7 @@ include = ["snektalk/assets/lib/**/*"]
 [tool.poetry.dependencies]
 python = "^3.8"
 coleo = "^0.2.1"
-hrepr = "^0.3.10"
+hrepr = "^0.3.11"
 sanic = "^20.9.1"
 jurigged = "^0.2.2"
 
