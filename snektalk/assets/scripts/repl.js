@@ -50,7 +50,8 @@ let evalIdGen = 0;
 
 
 class FuzzySearchResults {
-    constructor(element, entries) {
+    constructor(repl, element, entries) {
+        this.repl = repl;
         this.element = element;
         this.entries = entries;
         this.structured_results = null;
@@ -77,7 +78,13 @@ class FuzzySearchResults {
         this.results.innerHTML = "";
         for (const result of results) {
             const row = document.createElement("div");
-            row.innerText = this.entries[result.item];
+            row.classList.add("snek-fuzzy-entry");
+            const txt = this.entries[result.item];
+            row.innerText = txt;
+            row.onclick = () => {
+                this.repl.selectHistoryEntry(txt);
+                this.repl.editor.focus();
+            };
             this.results.appendChild(row);
         }
         if (!this.results.children.length) {
@@ -421,15 +428,7 @@ class Repl {
 
         editor.addCommand(
             KC.Enter,
-            () => {
-                const selection = this.historyPopup.get();
-                if (selection) {
-                    this.editor.setValue(selection);
-                    let nlines = this.editor.getModel().getLineCount();
-                    this.editor.setPosition({lineNumber: nlines, column: 1000000});
-                }
-                this.destroyHistoryPopup();
-            },
+            () => this.selectHistoryEntry(),
             "popupActive"
         );
 
@@ -486,9 +485,22 @@ class Repl {
         this.editor = editor;
     }
 
+    selectHistoryEntry(sel) {
+        const selection = sel || this.historyPopup.get();
+        console.log(sel);
+        console.log(selection);
+        if (selection) {
+            this.editor.setValue(selection);
+            let nlines = this.editor.getModel().getLineCount();
+            this.editor.setPosition({lineNumber: nlines, column: 1000000});
+        }
+        this.destroyHistoryPopup();
+    }
+
     setupHistoryPopup() {
         const el = document.createElement("div");
         const fuzz = new FuzzySearchResults(
+            this,
             el,
             this.history.slice(1),
         );

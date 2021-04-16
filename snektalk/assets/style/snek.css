@@ -362,12 +362,15 @@ body {
     position: absolute;
     bottom: calc(100% + 10px);
     white-space: pre;
+    cursor: pointer;
 }
 
 .snek-fuzzy-search-results {
     display: flex;
     flex-direction: column-reverse;
     width: 100%;
+    max-height: 60vh;
+    overflow: scroll;
 }
 
 .snek-fuzzy-search-input {
@@ -376,6 +379,11 @@ body {
 }
 
 .snek-fuzzy-cursor {
+    background: beige;
+    width: 100%;
+}
+
+.snek-fuzzy-entry:hover {
     background: beige;
     width: 100%;
 }
