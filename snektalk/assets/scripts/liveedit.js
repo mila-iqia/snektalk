@@ -42,11 +42,6 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
 
             this.element.appendChild(container);
             this.element.appendChild(status);
-
-            this.width = Math.max(600, this.element.offsetWidth);
-            setTimeout(0, () => {
-                this.width = Math.max(600, this.element.offsetWidth);
-            })
         }
 
         inferStatus() {
@@ -113,6 +108,7 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
                 scrollBeyondLastLine: false,
                 overviewRulerLanes: 0,
                 folding: false,
+                automaticLayout: true,
             });
             this.container.$editor = this.editor;
 
@@ -162,22 +158,17 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
         }
 
         event_updateHeight() {
-            if (!this.ignoreEvent) {
-                const width = this.width;
-                console.log(width);
-                const contentHeight = Math.min(
-                    this.options.max_height || 500,
-                    this.editor.getContentHeight()
-                );
-                this.container.style.width = `${width}px`;
-                this.container.style.height = `${contentHeight}px`;
-                try {
-                    this.ignoreEvent = true;
-                    this.editor.layout({ width: width, height: contentHeight });
-                } finally {
-                    this.ignoreEvent = false;
-                }
-            }
+            const contentHeight = Math.min(
+                this.options.max_height || 500,
+                this.editor.getContentHeight()
+            );
+            this.container.style.height = `${contentHeight}px`;
+            // Normally the relayout should be automatic, but doing it here
+            // avoids some flickering
+            this.editor.layout({
+                width: this.container.offsetWidth - 10,
+                height: contentHeight
+            });
         }
 
         async command_save() {
