@@ -30,6 +30,9 @@
         <script>
             require(["scripts/repl", "lib/split-grid.min"], (repl, Split) => {
                 // Set up split screen
+                let main = document.getElementById("main");
+                let width = Math.min(800, main.offsetWidth - 40);
+                main.style["grid-template-columns"] = `1fr 10px ${width}px 10px 1fr`;
                 Split({
                     columnGutters: [
                         {
@@ -43,7 +46,7 @@
                     ]
                 })
 
-                let the_repl = new repl.Repl(document.getElementById("main"));
+                let the_repl = new repl.Repl(main);
                 the_repl.connect();
                 the_repl.editor.focus();
             });

@@ -128,6 +128,7 @@ class Evaluator:
     @safe_fail
     def command_edit(self, expr, glb, lcl):
         expr = expr.lstrip()
+        self.session.queue(command="echo", value=f"/edit {expr}", process=False)
         obj = self.eval(expr, glb, lcl)
         self.session.queue_result(
             edit(obj, evaluator=self, autofocus=True), type="expression"

@@ -273,7 +273,7 @@ body {
 }
 
 .snek-bedit {
-    width: 100%;
+    width: calc(100% - 10px);
     border: 5px solid black;
     border-bottom: 2px solid;
     box-sizing: border-box;
@@ -282,11 +282,6 @@ body {
 .snek-bedit-editor {
     background: white;
     border: 5px solid white;
-}
-
-.snek-bedit-editor.ace_focus {
-    background: beige;
-    border: 5px solid beige;
 }
 
 .snek-bedit-saved { border-color: green; }
