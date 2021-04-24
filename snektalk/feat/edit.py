@@ -296,7 +296,7 @@ def _merge(self, obj: dict, m1: dict, m2):
             obj[k] = m2[k]
         else:
             obj[k] = self(obj[k], m1[k], m2[k])
-    return m1
+    return obj
 
 
 @ovld
