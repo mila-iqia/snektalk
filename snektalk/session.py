@@ -234,6 +234,7 @@ class History:
 
 class Session:
     def __init__(self, socket=None, history_file=None):
+        self.tempkeep = deque(maxlen=10)
         self.lib = Lib(self)
         self.blt = vars(builtins)
         self.idmap = {}
@@ -445,6 +446,7 @@ class Session:
 
     def queue_result(self, result, *, type):
         type, html = self.represent(type, result)
+        self.tempkeep.append(result)
         self.queue(command="result", value=html, type=type)
 
     ############
