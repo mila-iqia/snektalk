@@ -40,7 +40,7 @@ function isElementInViewport(el) {
 }
 
 require.config({ paths: { 'vs': '/lib/vs' }});
-define(["vs/editor/editor.main", "Fuse"], (monaco, Fuse) => {
+define(["vs/editor/editor.main"], (monaco) => {
 
 const KM = monaco.KeyMod;
 const KC = monaco.KeyCode;
@@ -49,62 +49,66 @@ let mainRepl = null;
 let evalIdGen = 0;
 
 
-class FuzzySearchResults {
-    constructor(repl, element, entries) {
-        this.repl = repl;
-        this.element = element;
-        this.entries = entries;
-        this.structured_results = null;
-        this.cursors = [0];
-        element.className = "snek-fuzzy-search";
-        this.results = document.createElement("div");
-        this.results.className = "snek-fuzzy-search-results";
-        element.appendChild(this.results);
+class PopupNav {
+    constructor(options) {
+        this.name = options.name;
+        this.default = options.default;
+        this.anchor = options.anchor;
+        this.element = document.createElement("div");
+        this.element.classList.add("snek-popup-nav");
+        this.element.classList.add(options.class);
+        this.anchor.appendChild(this.element);
+        this.onselect = options.onselect;
+        this.setEntries([]);
+        this.visible = true;
     }
 
     get() {
-        let ret = [];
-        for (let cursor of this.cursors) {
-            const result = this.structured_results[cursor];
-            if (result !== undefined) {
-                const entry = result.item;
-                ret.unshift(this.entries[entry]);
+        const ret = [];
+        for (const cursor of this.cursors) {
+            const entry = this.entries[cursor];
+            if (entry !== undefined) {
+                ret.push(entry);
             }
         }
-        return ret.join("\n") || null;
+        return ret;
     }
 
-    showResults(results) {
-        this.results.innerHTML = "";
-        for (const result of results) {
+    submit() {
+        this.onselect(this.get());
+    }
+
+    setEntries(entries) {
+        this.cursors = [];
+        this.entries = entries;
+        this.element.innerHTML = "";
+        for (const entry of entries) {
             const row = document.createElement("div");
-            row.classList.add("snek-fuzzy-entry");
-            const txt = this.entries[result.item];
-            row.innerText = txt;
-            row.onclick = () => {
-                this.repl.selectHistoryEntry(txt);
-                this.repl.editor.focus();
-            };
-            this.results.appendChild(row);
+            row.classList.add("snek-popup-nav-entry");
+            row.innerText = entry.text;
+            row.onclick = () => this.onselect([entry]);
+            this.element.appendChild(row);
         }
-        if (!this.results.children.length) {
-            this.results.innerHTML = "No matches";
+        if (!this.element.children.length) {
+            this.element.innerHTML = this.default;
         }
-        this.structured_results = results;
+        else {
+            this.setCursor([0]);
+        }
     }
 
     updateCursors(new_cursors) {
-        const n = this.structured_results.length;
+        const n = this.entries.length;
         if (n === 0) {
             return;
         }
-        for (let cursor of this.cursors) {
+        for (const cursor of this.cursors) {
             if (new_cursors.indexOf(cursor) === -1) {
-                this.results.children[cursor].classList.remove("snek-fuzzy-cursor");
+                this.element.children[cursor].classList.remove("snek-popup-nav-cursor");
             }
         }
-        for (let cursor of new_cursors) {
-            this.results.children[cursor].classList.add("snek-fuzzy-cursor");
+        for (const cursor of new_cursors) {
+            this.element.children[cursor].classList.add("snek-popup-nav-cursor");
         }
         this.cursors = new_cursors;
     }
@@ -115,23 +119,51 @@ class FuzzySearchResults {
     }
 
     addCursor(value) {
-        let new_cursors = this.cursors.slice(0);
-        new_cursors.push(value);
-        new_cursors.sort();
+        let new_cursors = [value, ...this.cursors];
+        new_cursors = [...new Set(new_cursors)];
+        new_cursors.sort((x, y) => x - y);
         this.updateCursors(new_cursors);
     }
 
-    expandUp() {
+    goUp(expand) {
         const x = this.cursors.length - 1;
-        if (this.cursors.length && this.cursors[x] < this.structured_results.length - 1) {
-            this.addCursor(this.cursors[x] + 1);
+        if (!this.cursors.length && this.entries.length) {
+            this.setCursor(0);
+        }
+        else if (this.cursors.length) {
+            const pos = Math.min(this.entries.length - 1, this.cursors[x] + 1);
+            if (expand) {
+                this.addCursor(pos);
+            }
+            else {
+                this.setCursor(pos);
+            }
         }
     }
 
-    expandDown() {
-        if (this.cursors.length && this.cursors[0] > 0) {
-            this.addCursor(this.cursors[0] - 1);
+    goDown(expand) {
+        if (!this.cursors.length && this.entries.length) {
+            this.setCursor(0);
         }
+        else if (this.cursors.length) {
+            const pos = Math.max(0, this.cursors[0] - 1);
+            if (expand) {
+                this.addCursor(pos);
+            }
+            else {
+                this.setCursor(pos);
+            }
+        }
+    }
+
+    show() {
+        this.element.style.display = "flex";
+        this.visible = true;
+    }
+
+    hide() {
+        this.element.style.display = "none";
+        this.visible = false;
     }
 }
 
@@ -148,12 +180,48 @@ class Repl {
         this.inputOuter = target.querySelector(".snek-input-box");
         this.inputBox = target.querySelector(".snek-input");
         this.inputMode = target.querySelector(".snek-input-mode");
+        this.inputMode.onclick = () => setTimeout(() => {
+            this.togglePopup("interactors");
+            this.editor.focus();
+        }, 0);
         this.statusBar = target.querySelector(".snek-status-bar");
-        this.statusBar.onclick = () => this.cmd_status("/status")
+        this.statusBar.onclick = () => this.cmd_status("/status");
         this.nav = target.querySelector(".snek-nav");
         this.statusHistory = document.createElement("div");
         this.statusHistory.className = "snek-status-history";
         this._setupEditor(this.inputBox);
+
+        this.popups = {
+            history: new PopupNav({
+                name: "history",
+                anchor: this.inputOuter,
+                onselect: entries => {
+                    console.log(entries);
+                    this.editor.setValue(entries.map(x => x.text).join("\n"));
+                    const nlines = this.editor.getModel().getLineCount();
+                    this.editor.setPosition({lineNumber: nlines, column: 1000000});
+                    this.togglePopup(null);
+                    this.editor.focus();
+                },
+                class: "snek-popup-nav-history",
+                default: "No results",
+            }),
+            interactors: new PopupNav({
+                name: "interactors",
+                anchor: this.inputOuter,
+                onselect: entries => {
+                    this.send({
+                        command: "submit",
+                        expr: `/attach ${entries[0].text}`,
+                    });
+                    this.togglePopup(null);
+                    this.editor.focus();
+                },
+                class: "snek-popup-nav-interactors",
+                default: "No interactors",
+            })
+        };
+        this.togglePopup(null);
 
         this.historySelection = 0;
         this.filter = null;
@@ -240,6 +308,14 @@ class Repl {
             }
             target = target.parentElement;
         }
+
+        while (target) {
+            if (target.classList.contains("snek-popup-nav")) {
+                return;
+            }
+            target = target.parentElement;
+        }
+        this.togglePopup(null);
     }
 
     get_external(id) {
@@ -388,19 +464,17 @@ class Repl {
             this.atEnd.set(lineno == total);
         });
 
-        this.editor.getModel().onDidChangeContent(() => {
+        this.editor.getModel().onDidChangeContent(async () => {
             let total = editor.getModel().getLineCount();
             this.multiline.set(
                 total > 1
                 || editor.getModel().getLineContent(1).match(/[\(\[\{:]$|^@/)
             )
-            if (this.historyPopup) {
-                this.setupFilter();
-            }
-            else if (this.expectedContent !== null
-                && this.editor.getValue() !== this.expectedContent) {
-                    this.filter = null;
-                    this.expectedContent = null;
+            let pop = this.activePopup;
+            if (pop !== null) {
+                pop.setEntries(
+                    await this.lib.populate_popup(pop.name, this.editor.getValue())
+                );
             }
         });
 
@@ -419,7 +493,7 @@ class Repl {
                 this.history[0] = "";
             }
             this.filter = null;
-            this.destroyHistoryPopup();
+            this.togglePopup(null);
             // The flex-direction on the outer pane is reversed, so
             // 0 scrolls it to the bottom. Handy.
             this.outerPane.scrollTop = 0;
@@ -429,18 +503,6 @@ class Repl {
             KC.Enter,
             _submit,
             "!multiline && !popupActive"
-        );
-
-        editor.addCommand(
-            KC.Enter,
-            () => this.selectHistoryEntry(),
-            "popupActive"
-        );
-
-        editor.addCommand(
-            KC.Escape,
-            () => this.destroyHistoryPopup(),
-            "popupActive"
         );
 
         editor.addCommand(
@@ -455,32 +517,60 @@ class Repl {
 
         editor.addCommand(
             KM.WinCtrl | KC.KEY_R,
-            () => this.setupHistoryPopup()
+            () => this.togglePopup("history")
         );
 
         editor.addCommand(
             KC.UpArrow,
-            () => { this.historyShift(-1); },
-            "atBeginning"
+            () => { this.navigateHistory(-1); },
+            "atBeginning && !popupActive"
         );
 
         editor.addCommand(
             KC.DownArrow,
-            () => { this.historyShift(1); },
-            "atEnd"
+            () => { this.navigateHistory(1); },
+            "atEnd && !popupActive"
+        );
+
+        // Bindings when popup is active
+
+        editor.addCommand(
+            KC.Enter,
+            () => this.activePopup.submit(),
+            "popupActive"
+        );
+
+        editor.addCommand(
+            KC.Escape,
+            () => this.togglePopup(null),
+            "popupActive"
+        );
+
+        editor.addCommand(
+            KC.UpArrow,
+            () => { this.activePopup.goUp(); },
+            "popupActive"
+        );
+
+        editor.addCommand(
+            KC.DownArrow,
+            () => { this.activePopup.goDown(); },
+            "popupActive"
         );
 
         editor.addCommand(
             KM.Shift | KC.UpArrow,
-            () => { this.historyPopup.expandUp(); },
+            () => { this.activePopup.goUp(true); },
             "popupActive"
         );
 
         editor.addCommand(
             KM.Shift | KC.DownArrow,
-            () => { this.historyPopup.expandDown(); },
+            () => { this.activePopup.goDown(true); },
             "popupActive"
         );
+
+        // Misc
 
         editor.addCommand(
             KM.Alt | KC.US_SEMICOLON,
@@ -508,87 +598,31 @@ class Repl {
         this.editor = editor;
     }
 
-    selectHistoryEntry(sel) {
-        const selection = sel || this.historyPopup.get();
-        console.log(sel);
-        console.log(selection);
-        if (selection) {
-            this.editor.setValue(selection);
-            let nlines = this.editor.getModel().getLineCount();
-            this.editor.setPosition({lineNumber: nlines, column: 1000000});
+    async togglePopup(name) {
+        this.activePopup = null;
+        for (const popupName in this.popups) {
+            const pop = this.popups[popupName];
+            if (name == popupName && !pop.visible) {
+                const entries = await this.lib.populate_popup(name, this.editor.getValue());
+                if (entries !== null) {
+                    pop.setEntries(entries);
+                }
+                pop.show();
+                if (!pop.entries.length) {
+                    pop.setCursor(0);
+                }
+                this.activePopup = pop;
+            }
+            else {
+                pop.hide();
+            }
         }
-        this.destroyHistoryPopup();
+        this.popupActive.set(this.activePopup !== null);
     }
 
-    setupHistoryPopup() {
-        const el = document.createElement("div");
-        const fuzz = new FuzzySearchResults(
-            this,
-            el,
-            this.history.slice(1),
-        );
-        this.inputOuter.insertBefore(el, this.inputMode);
-        this.historyPopup = fuzz;
-        this.popupActive.set(true);
-        this.setupFilter();
-    }
-
-    destroyHistoryPopup() {
-        if (this.historyPopup !== null) {
-            this.historyPopup.element.remove();
-            this.historyPopup = null;
-            this.popupActive.set(false);
-            this.filter = null;
-        }
-    }
-
-    setupFilter() {
-        const popup = this.historyPopup !== null;
-        this.filter = this.editor.getValue();
-        this.history[0] = this.filter;
-        const histo = popup ? this.history.slice(1) : this.history;
-        if (!this.filter) {
-            this.filteredHistory = histo.map(
-                (elem, idx) => ({item: idx})
-            );
-        }
-        else {
-            const options = {
-                includeScore: true,
-                includeMatches: true,
-            };
-            const fuse = new Fuse(histo, options);
-            this.filteredHistory = fuse.search(this.filter);
-        }
-        this.historySelection = 0;
-        if (popup) {
-            this.historyPopup.showResults(this.filteredHistory);
-            this.historyPopup.setCursor(0);
-        }
-    }
-
-    historyShift(delta) {
-        if (this.filter === null) {
-            this.setupFilter();
-        }
-
-        let sel = this.historySelection;
-        let n = this.filteredHistory.length;
-        let new_sel = Math.max(0, Math.min(n - 1, sel - delta));
-
-        if (new_sel === sel) {
-            return;
-        }
-
-        this.historySelection = new_sel;
-        let item = this.filteredHistory[new_sel].item;
-
-        if (this.historyPopup !== null) {
-            this.historyPopup.setCursor(new_sel);
-        }
-        else {
-            let text = this.history[item];
-
+    async navigateHistory(delta) {
+        const text = (await this.lib.history_navigate(delta, this.editor.getValue()));
+        if (text !== null) {
             this.expectedContent = text;
             this.editor.setValue(text);
 

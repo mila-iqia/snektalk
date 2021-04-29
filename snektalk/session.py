@@ -16,6 +16,7 @@ from itertools import count
 from hrepr import H, Tag, hrepr
 
 from .config import mayread, maywrite
+from .fzf import fuzzyfinder
 from .registry import callback_registry
 
 _c = count(1)
@@ -155,6 +156,21 @@ class Lib:
         thread = self.session.owner or threading.main_thread()
         kill_thread(thread, SnektalkInterrupt)
 
+    def method_history_navigate(self, delta, query):
+        return self.session.history.navigate(delta, query)
+
+    def method_populate_popup(self, name, query):
+        if name == "history":
+            return [
+                {"text": entry}
+                for entry in self.session.history.search(query)
+            ]
+        else:
+            return [{"text": "main"}] + [
+                {"text": name}
+                for name, thread in threads.threads.items()
+            ]
+
     def export(self):
         if self._export:
             return self._export
@@ -167,6 +183,53 @@ class Lib:
                 rval[method_name[7:]] = method_id
 
         return rval
+
+
+class History:
+    def __init__(self, history_file):
+        self.history_file = history_file
+        self.read()
+
+    def read(self):
+        self.history = deque(mayread(self.history_file, default=[]))
+        self.query_results = self.history
+        self.current_query = ""
+        self.reset_cursor()
+
+    def save(self):
+        maywrite(self.history_file, list(self.history)[:1000])
+
+    def _clamp(self, x):
+        return max(-1, min(len(self.history) - 1, x))
+
+    def append(self, entry):
+        if not self.history or self.history[0] != entry:
+            self.history.appendleft(entry)
+        self.reset_cursor()
+
+    def reset_cursor(self):
+        self.cursor = -1
+
+    def navigate(self, delta, query):
+        if self.cursor == -1 or query != self.query_results[self.cursor]:
+            if query == "":
+                self.query_results = self.history
+                self.current_query = ""
+            else:
+                self.query_results = list(self.search(query))
+                self.current_query = query
+
+        prev = self.cursor
+        self.cursor = max(-1, min(len(self.query_results) - 1, self.cursor - delta))
+        if self.cursor == -1:
+            return self.current_query
+        elif prev != self.cursor:
+            return self.query_results[self.cursor]
+        else:
+            return None
+
+    def search(self, query):
+        return fuzzyfinder(query, self.history)
 
 
 class Session:
@@ -184,8 +247,7 @@ class Session:
         self.semaphores = defaultdict(lambda: threading.Semaphore(value=0))
         self.navs = {}
         self.owners = []
-        self.history_file = history_file
-        self.history = mayread(history_file, default=[])
+        self.history = History(history_file)
         self.dispatch = CommandDispatcher(
             {
                 "/attach[ \n]?(.*)": self.submit_command_attach,
@@ -336,7 +398,6 @@ class Session:
         self.sent_resources = set()
         while self.out_queue:
             self.schedule(self.send(**self.out_queue.popleft()))
-        self.queue(command="add_history", history=self.history)
         self.queue(command="set_lib", lib=self.lib.export())
         self.submit({"command": "noop"})
 
@@ -485,4 +546,4 @@ class Session:
             )
 
     def atexit(self):
-        maywrite(self.history_file, self.history[:1000])
+        self.history.save()

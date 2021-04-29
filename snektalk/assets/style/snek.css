@@ -255,19 +255,6 @@ body {
     background: #fa5;
 }
 
-/* TODO: style the protected range when it is properly read-only */
-/*
-.snek-bedit-protected {
-    position: absolute;
-    background: repeating-linear-gradient(
-        45deg,
-        #eee,
-        #eee 10px,
-        transparent 10px,
-        transparent 20px
-      );
-} */
-
 .snek-pin-pane .snek-bedit {
     width: 600px;
 }
@@ -349,8 +336,11 @@ body {
 }
 
 
-.snek-fuzzy-search {
-    width: 100%;
+.snek-popup-nav {
+    display: flex;
+    flex-direction: column-reverse;
+    max-height: 60vh;
+    overflow: scroll;
     background: white;
     box-shadow: 5px 5px 10px #bbb;
     border: 1px solid #ddd;
@@ -360,39 +350,31 @@ body {
     cursor: pointer;
 }
 
-.snek-fuzzy-search-results {
-    display: flex;
-    flex-direction: column-reverse;
-    width: 100%;
-    max-height: 60vh;
-    overflow: scroll;
+.snek-popup-nav-history {
+    width: calc(100% - 20px);
 }
 
-.snek-fuzzy-search-input {
-    width: 100%;
-    background: #f0f0f0;
+.snek-popup-nav-entry {
+    border-left: 1px solid white;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-top: 1px;
+    padding-bottom: 1px;
 }
 
-.snek-fuzzy-cursor {
+.snek-popup-nav-entry:hover {
+    border-left: 1px solid green;
+    /* background: rgb(244, 244, 232); */
+}
+
+.snek-popup-nav-cursor {
     background: beige;
-    width: 100%;
-}
-
-.snek-fuzzy-entry:hover {
-    background: beige;
-    width: 100%;
-}
-
-.snek-fuzzy-search-input {
-    font-family: inherit;
-    background: #e0e0e0;
-    outline: none;
-    border: none;
-    padding: 0px;
-    box-sizing: border-box;
-    width: 100%;
 }
 
 .snek-shellout {
     white-space: pre;
+}
+
+.snek-input-mode {
+    cursor: pointer;
 }
