@@ -71,7 +71,7 @@ class PopupNav {
                 ret.push(entry);
             }
         }
-        return ret;
+        return ret.reverse();
     }
 
     submit() {
@@ -196,7 +196,6 @@ class Repl {
                 name: "history",
                 anchor: this.inputOuter,
                 onselect: entries => {
-                    console.log(entries);
                     this.editor.setValue(entries.map(x => x.text).join("\n"));
                     const nlines = this.editor.getModel().getLineCount();
                     this.editor.setPosition({lineNumber: nlines, column: 1000000});
