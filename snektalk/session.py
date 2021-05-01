@@ -283,7 +283,7 @@ class Session:
             current.release(len(self.in_queue))
 
     def _current_prompt(self):
-        for act in self.navs.get(self.owner, []):
+        for act in self.navs.get(self.owner, {}).values():
             act()
 
     def push_owner(self, thread):
@@ -364,15 +364,16 @@ class Session:
     ################
 
     def set_prompt(self, prompt):
-        self.add_nav_action(lambda: self.queue(command="set_mode", html=prompt))
+        self.add_nav_action("prompt", lambda: self.queue(command="set_mode", html=prompt))
 
     def set_nav(self, nav):
         self.add_nav_action(
-            lambda: self.queue(command="set_nav", value=hrepr(nav))
+            "nav",
+            lambda: self.queue(command="set_nav", value=hrepr(nav, interactive=False), navid=id(nav))
         )
 
-    def add_nav_action(self, action):
-        self.navs.setdefault(NamedThreads.current(), []).append(action)
+    def add_nav_action(self, name, action):
+        self.navs.setdefault(NamedThreads.current(), {})[name] = action
 
     @contextmanager
     def prompt(self, prompt="", nav=H.span()):

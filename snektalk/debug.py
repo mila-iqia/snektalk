@@ -44,12 +44,14 @@ class SnekTalkDb(bdb.Bdb):
             cf, defn = None, None
         if defn is None:
             self.session.add_nav_action(
+                "update",
                 lambda: self.nav.js.update(
                     f"'Could not find source code for {frame.f_code.co_name}'"
                 )
             )
         else:
             self.session.add_nav_action(
+                "update",
                 lambda: self.nav.js.update(
                     defn.codestring,
                     format_libpath(defn.filename),

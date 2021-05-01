@@ -803,10 +803,13 @@ class Repl {
     }
 
     recv_set_nav(data) {
-        this.nav.innerHTML = "";
-        if (data.value) {
-            let elem = this.reify(data.value);
-            this.nav.appendChild(elem);
+        if (data.navid === undefined || data.navid !== this.last_nav) {
+            this.nav.innerHTML = "";
+            if (data.value) {
+                let elem = this.reify(data.value);
+                this.nav.appendChild(elem);
+            }
+            this.last_nav = data.navid;
         }
     }
 
