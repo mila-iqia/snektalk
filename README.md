@@ -51,33 +51,51 @@ At a glance Snektalk might appear similar to Jupyter notebooks, but it follows d
 
 Simply type `/edit func` and you will be greeted with a small inline editor for the source code of `func`. You may change it and hit `Ctrl+Enter` to change it in the current process, or `Ctrl+Shift+Enter` to save it back into the original file it came from. You can come back to it at any time, of course.
 
+![edit](https://user-images.githubusercontent.com/599820/116953136-7c74de00-ac5a-11eb-9868-a53da72a1f5d.gif)
+
 Virtually *any* function can be edited, whether it is yours or comes from a third party library or even the standard library.
 
 `/edit` also works on data structures. You will be given an editable sandbox where you can change dictionaries, reorder lists, change the values of the fields of an object, and so on. Objects can even define a custom `__snek_edit__` method to control how they are edited.
+
+![edit-data](https://user-images.githubusercontent.com/599820/116953144-826abf00-ac5a-11eb-93b7-cfdcc46ac166.gif)
 
 ## Rich and interactive representations
 
 Snektalk does not print lists, dictionaries or objects as mere text, but as rich HTML objects using [hrepr](https://github.com/breuleux/hrepr).
 
+![repr](https://user-images.githubusercontent.com/599820/116953095-5ea77900-ac5a-11eb-8091-5b27a3a795dc.gif)
+
 `Ctrl+Click` (or `Cmd+Click` on Mac) the representation of an object to put it in a temporary variable. This makes it very easy to test or play with objects that are deeply nested in another.
+
+![click](https://user-images.githubusercontent.com/599820/116953201-ac23e600-ac5a-11eb-9464-3aeccc9632d0.gif)
 
 Representations are highly customizable and recursive representations can be defined and configured in a snap. See [here](https://github.com/breuleux/hrepr#custom-representations) for how to define custom representations.
 
 The representation of exceptions is particularly interesting because each frame is associated to a live editor, so you can simply fix the error right there as you see it.
 
+![exc](https://user-images.githubusercontent.com/599820/116953211-b34af400-ac5a-11eb-9d7e-37b51a7e955f.gif)
+
 ## Visualization
 
 Snektalk supports elaborate visualizations: plots, graphs, and so on. Integrating a new or existing JavaScript library is mostly a matter of linking it from a CDN and writing a small wrapper.
 
+![plot](https://user-images.githubusercontent.com/599820/116953224-ba720200-ac5a-11eb-8a4e-aba17fb214bc.gif)
+
 It is also easy to configure visualizations so that various interactions call Python callbacks. One great use of this feature is the ability to click on nodes or points in a graph to put the underlying data in a variable and paste it into the REPL's input box so that you can analyze it further.
+
+![graph](https://user-images.githubusercontent.com/599820/116955206-e2b02f80-ac5f-11eb-8474-dbdcd59cdd3a.gif)
 
 ## Debugging
 
 `/debug f(x, y)` will enter a function call in debugger mode. Snektalk's debugger is quite similar to `pdb` and the usual `pdb` commands (`step`, `next`, `continue`, etc.) should work just the same.
 
+![debug](https://user-images.githubusercontent.com/599820/116955224-eba10100-ac5f-11eb-81a8-4b042718611b.gif)
+
 ## Threads
 
 `/thread f(x, y)` will run `f(x, y)` in a separate thread, which lets you keep working while it's running. Each thread is given a mnemonic name so that you can easily `/kill` them.
+
+![thread](https://user-images.githubusercontent.com/599820/116955232-f0fe4b80-ac5f-11eb-8578-079f5e753052.gif)
 
 You may use `snektalk -t` to start the main script in a thread, giving you immediate access to the REPL. This will allow you to inspect or fiddle with the global state while the script is running, among other things.
 
