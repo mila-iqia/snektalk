@@ -50,6 +50,14 @@ def cli():
     # [alias: -t]
     thread: Option & bool = default(False)
 
+    # Show the version
+    version: Option & bool = default(False)
+
+    if version:
+        from .version import version
+        print(version)
+        return
+
     if connect:
         connect_to_existing(connect, port, socket)
         return
