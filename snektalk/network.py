@@ -26,10 +26,13 @@ def create_socket(socket_path):
     return s
 
 
-def create_inet():
+def create_inet(randomize=False):
     # Generate a random loopback address (127.x.x.x)
-    addr = ipaddress.IPv4Address("127.0.0.1") + random.randrange(2 ** 24 - 2)
-    addr = str(addr)
+    if randomize:
+        addr = ipaddress.IPv4Address("127.0.0.1") + random.randrange(2 ** 24 - 2)
+        addr = str(addr)
+    else:
+        addr = "localhost"
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind((addr, 0))

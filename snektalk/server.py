@@ -44,6 +44,8 @@ def _launch(port=None, sock=None, open_browser=True, template={}, sess=None):
     elif port is None:
         sock = create_inet()
         host, port = sock.getsockname()
+    else:
+        host = "localhost"
 
     app = Sanic("snektalk")
     app.static("/favicon.ico", f"{assets_path}/favicon.ico")
