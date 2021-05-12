@@ -62,10 +62,7 @@ def evaluate(expr, glb, lcl):
     else:
         rval = None
 
-    cf.code.set_globals(glb)
-    for v in lcl.values():
-        cf.associate(v)
-
+    cf.associate(glb)
     return rval
 
 
