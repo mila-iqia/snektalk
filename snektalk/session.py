@@ -162,13 +162,11 @@ class Lib:
     def method_populate_popup(self, name, query):
         if name == "history":
             return [
-                {"text": entry}
-                for entry in self.session.history.search(query)
+                {"text": entry} for entry in self.session.history.search(query)
             ]
         else:
             return [{"text": "main"}] + [
-                {"text": name}
-                for name, thread in threads.threads.items()
+                {"text": name} for name, thread in threads.threads.items()
             ]
 
     def export(self):
@@ -220,7 +218,9 @@ class History:
                 self.current_query = query
 
         prev = self.cursor
-        self.cursor = max(-1, min(len(self.query_results) - 1, self.cursor - delta))
+        self.cursor = max(
+            -1, min(len(self.query_results) - 1, self.cursor - delta)
+        )
         if self.cursor == -1:
             return self.current_query
         elif prev != self.cursor:
@@ -364,12 +364,18 @@ class Session:
     ################
 
     def set_prompt(self, prompt):
-        self.add_nav_action("prompt", lambda: self.queue(command="set_mode", html=prompt))
+        self.add_nav_action(
+            "prompt", lambda: self.queue(command="set_mode", html=prompt)
+        )
 
     def set_nav(self, nav):
         self.add_nav_action(
             "nav",
-            lambda: self.queue(command="set_nav", value=hrepr(nav, interactive=False), navid=id(nav))
+            lambda: self.queue(
+                command="set_nav",
+                value=hrepr(nav, interactive=False),
+                navid=id(nav),
+            ),
         )
 
     def add_nav_action(self, name, action):

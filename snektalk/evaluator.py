@@ -11,7 +11,7 @@ from jurigged import CodeFile, registry
 from jurigged.recode import virtual_file
 
 from .feat.edit import edit
-from .session import current_session, new_evalid, threads, SnektalkInterrupt
+from .session import SnektalkInterrupt, current_session, new_evalid, threads
 from .version import version
 
 cmd_rx = re.compile(r"/([^ \n]+)([ \n].*)?", re.MULTILINE | re.DOTALL)

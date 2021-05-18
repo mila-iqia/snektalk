@@ -9,7 +9,15 @@ from hrepr.std import _extract_as
 from .debug import SnekTalkDb
 from .feat.edit import edit
 from .session import current_print_session, current_session
-from .utils import Importer, format_libpath, join, mod, pastevar, represents, sktk_hjson
+from .utils import (
+    Importer,
+    format_libpath,
+    join,
+    mod,
+    pastevar,
+    represents,
+    sktk_hjson,
+)
 
 ##################
 # SnekTalk print #

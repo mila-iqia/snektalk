@@ -29,7 +29,9 @@ def create_socket(socket_path):
 def create_inet(randomize=False):
     # Generate a random loopback address (127.x.x.x)
     if randomize:
-        addr = ipaddress.IPv4Address("127.0.0.1") + random.randrange(2 ** 24 - 2)
+        addr = ipaddress.IPv4Address("127.0.0.1") + random.randrange(
+            2 ** 24 - 2
+        )
         addr = str(addr)
     else:
         addr = "localhost"

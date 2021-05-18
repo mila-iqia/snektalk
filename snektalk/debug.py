@@ -47,7 +47,7 @@ class SnekTalkDb(bdb.Bdb):
                 "update",
                 lambda: self.nav.js.update(
                     f"'Could not find source code for {frame.f_code.co_name}'"
-                )
+                ),
             )
         else:
             self.session.add_nav_action(
@@ -57,7 +57,7 @@ class SnekTalkDb(bdb.Bdb):
                     format_libpath(defn.filename),
                     defn.stashed.lineno,
                     frame.f_lineno,
-                )
+                ),
             )
 
     def get_frame(self):

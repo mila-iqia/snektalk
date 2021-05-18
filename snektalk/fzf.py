@@ -19,13 +19,15 @@ def fuzzyfinder(input, collection):
     """
     suggestions = []
     input = str(input) if not isinstance(input, str) else input
-    pat = '.*?'.join(map(re.escape, input))
-    pat = '(?=({0}))'.format(pat)   # lookahead regex to manage overlapping matches
+    pat = ".*?".join(map(re.escape, input))
+    pat = "(?=({0}))".format(
+        pat
+    )  # lookahead regex to manage overlapping matches
     regex = re.compile(pat, re.IGNORECASE)
     for idx, item in enumerate(collection):
         r = list(regex.finditer(item))
         if r:
-            best = min(r, key=lambda x: len(x.group(1)))   # find shortest match
+            best = min(r, key=lambda x: len(x.group(1)))  # find shortest match
             suggestions.append((len(best.group(1)), idx, item))
 
     # print(regex)
