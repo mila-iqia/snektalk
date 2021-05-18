@@ -1,20 +1,33 @@
-import importlib
-import os
 import sys
-from types import ModuleType
+from types import SimpleNamespace
 
 from coleo import Option, default, run_cli
 from jurigged import registry
+from jurigged.live import find_runner
 from jurigged.utils import glob_filter
 
-from . import runpy as snek_runpy
 from .evaluator import Evaluator, threads
 from .network import connect_to_existing
 from .server import serve
 
 
 def main():
-    run_cli(cli)
+    mod, run, sess, thread = run_cli(cli)
+
+    try:
+        if run is not None:
+            if thread:
+                threads.run_in_thread(run, session=sess)
+            else:
+                run()
+    except Exception as exc:
+        if sess is not None:
+            sess.blt["$$exc_info"] = sys.exc_info()
+            sess.queue_result(exc, type="exception")
+        else:
+            raise
+    finally:
+        Evaluator(mod, vars(mod) if mod else {}, None, sess).loop()
 
 
 def cli():
@@ -55,6 +68,7 @@ def cli():
 
     if version:
         from .version import version
+
         print(version)
         return
 
@@ -81,58 +95,8 @@ def cli():
         template={"title": module or script or "snektalk"},
         **server_args,
     )
-    mod = None
-    exc = None
-    run = None
 
-    try:
-        if module:
-            if script is not None:
-                argv.insert(0, script)
-            sys.argv[1:] = argv
+    opts = SimpleNamespace(module=module, script=script, rest=argv,)
 
-            if ":" in module:
-                module, func = module.split(":", 1)
-                mod = importlib.import_module(module)
-                run = getattr(mod, func)
-
-            else:
-                _, spec, code = snek_runpy._get_module_details(module)
-                if pattern(spec.origin):
-                    registry.prepare("__main__", spec.origin)
-                mod = ModuleType("__main__")
-
-                def run():
-                    snek_runpy.run_module(module, module_object=mod)
-
-        elif script:
-            path = os.path.abspath(script)
-            if pattern(path):
-                # It won't auto-trigger through runpy, probably some idiosyncracy of
-                # module resolution
-                registry.prepare("__main__", path)
-            sys.argv[1:] = argv
-            mod = ModuleType("__main__")
-
-            def run():
-                snek_runpy.run_path(path, module_object=mod)
-
-        else:
-            mod = ModuleType("__main__")
-
-        if run is not None:
-            if thread:
-                threads.run_in_thread(run, session=sess)
-            else:
-                run()
-
-    except Exception as exc:
-        if sess is not None:
-            sess.blt["$$exc_info"] = sys.exc_info()
-            sess.queue_result(exc, type="exception")
-        else:
-            raise
-
-    finally:
-        if sess is not None:
-            Evaluator(mod, vars(mod) if mod else {}, None, sess).loop()
+    mod, run = find_runner(opts, pattern)
+    return mod, run, sess, thread
