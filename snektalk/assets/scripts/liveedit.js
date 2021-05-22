@@ -155,6 +155,40 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
                     }
                 }
             )
+
+            this.editor.addAction({
+                id: 'add-probe',
+                label: 'Probe',
+                keybindings: [KM.CtrlCmd | KM.Alt | KC.KEY_P],
+                precondition: null,
+                keybindingContext: null,
+                contextMenuGroupId: '99_probe',
+                contextMenuOrder: 1,
+                run: ed => {
+                    // Send the selection, or the word under the cursor if
+                    // there is no selection. I'm sure there's an actual
+                    // function somewhere in monaco to do this, because this
+                    // is how actions that need a selection seem to already
+                    // work, but finding it seems more time consuming than
+                    // implementing it.
+                    const model = ed.getModel();
+                    let sel = ed.getSelection();
+                    if (sel.startLineNumber === sel.endLineNumber
+                        && sel.startColumn === sel.endColumn) {
+
+                        const pos = ed.getPosition();
+                        const word = model.getWordAtPosition(pos);
+                        sel = {
+                            startLineNumber: pos.lineNumber,
+                            startColumn: word.startColumn,
+                            endLineNumber: pos.lineNumber,
+                            endColumn: word.endColumn,
+                        }
+                    }
+
+                    this.options.py.probe(sel);
+                }
+            });
         }
 
         event_updateHeight() {
