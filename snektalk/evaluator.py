@@ -109,7 +109,7 @@ class Evaluator:
 
     @safe_fail
     def command_dir(self, expr, glb=None, lcl=None):
-        from .repr import hdir
+        from .lib import hdir
 
         expr = expr.lstrip()
 

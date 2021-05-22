@@ -14,8 +14,8 @@ from jurigged import codetools
 from sanic import Sanic, response
 
 from .config import get_config_path
+from .lib import inject
 from .network import create_inet, create_socket
-from .repr import inject
 from .session import Session
 
 here = os.path.dirname(__file__)
