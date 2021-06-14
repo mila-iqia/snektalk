@@ -16,6 +16,9 @@ class SnekTalkDb(bdb.Bdb):
     # Note: Many methods have been lifted from pdb.py in the standard lib
     # and slightly adapted
 
+    def get_globals(self):
+        return self.evaluator.get_globals()
+
     def reset(self):
         super().reset()
         self.session = current_session()

@@ -247,6 +247,7 @@ class Session:
         self.out_queue = deque()
         self.semaphores = defaultdict(lambda: threading.Semaphore(value=0))
         self.navs = {}
+        self.evaluators = {}
         self.owners = []
         self.history = History(history_file)
         self.dispatch = CommandDispatcher(
@@ -319,9 +320,6 @@ class Session:
             _current_session.reset(token)
             _current_print_session.reset(tokenp)
 
-    def set_globals(self, glb):
-        self.glb = glb
-
     def newvar(self):
         """Create a new variable."""
         return f"_{next(self.varcount)}"
@@ -378,13 +376,17 @@ class Session:
             ),
         )
 
+    def active_evaluator(self):
+        return self.evaluators[self.owner]
+
     def add_nav_action(self, name, action):
         self.navs.setdefault(NamedThreads.current(), {})[name] = action
 
     @contextmanager
-    def prompt(self, prompt="", nav=H.span()):
+    def prompt(self, prompt="", nav=H.span(), evaluator=None):
         self.set_prompt(prompt)
         self.set_nav(nav)
+        self.evaluators[NamedThreads.current()] = evaluator
         self._clean_owners()
         self._current_prompt()
         expr = self.next()

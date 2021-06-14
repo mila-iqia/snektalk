@@ -792,7 +792,7 @@ class Repl {
         }
     }
 
-    recv_pastevar(data) {
+    recv_pastecode(data) {
         let varname = data.value;
         this.editor.trigger("keyboard", "type", {text: varname});
         this.editor.focus();

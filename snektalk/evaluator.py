@@ -11,7 +11,7 @@ from jurigged import CodeFile, registry
 from jurigged.recode import virtual_file
 
 from .feat.edit import edit
-from .session import SnektalkInterrupt, current_session, new_evalid, threads
+from .session import SnektalkInterrupt, current_session, threads
 from .version import version
 
 cmd_rx = re.compile(r"/([^ \n]+)([ \n].*)?", re.MULTILINE | re.DOTALL)
@@ -76,6 +76,9 @@ class Evaluator:
         self.module = module
         self.glb = glb
         self.lcl = lcl
+
+    def get_globals(self):
+        return self.glb
 
     def eval(self, expr, glb=None, lcl=None):
         if glb is None:
@@ -246,7 +249,7 @@ class Evaluator:
             while True:
                 try:
                     prompt = H.span["snek-input-mode-python"](self.prompt)
-                    with self.session.prompt(prompt) as cmd:
+                    with self.session.prompt(prompt, evaluator=self) as cmd:
                         if cmd["command"] == "expr":
                             expr = cmd["expr"]
                             if expr.strip():

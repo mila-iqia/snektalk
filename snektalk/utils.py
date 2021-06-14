@@ -89,12 +89,17 @@ def mod(cls):
 
 def pastevar(obj):
     sess = current_session()
-    sess.queue(command="pastevar", value=sess.getvar(obj))
+    sess.queue(command="pastecode", value=sess.getvar(obj))
 
 
-def pastecode(code):
+def pastecode(code, vars={}):
     sess = current_session()
-    sess.queue(command="pastevar", value=code)
+    ev = sess.active_evaluator()
+    if ev is not None:
+        for var, (expected, generate) in vars.items():
+            if ev.get_globals().get(var, None) is not expected:
+                code = f"{generate}\n{code}"
+    sess.queue(command="pastecode", value=code)
 
 
 def _default_click(obj, evt):
