@@ -1,6 +1,7 @@
 import types
 from dataclasses import dataclass
 from itertools import count, product
+from typing import Union
 
 from hrepr import H, Interface, standard_terminal
 from jurigged import make_recoder
@@ -23,14 +24,15 @@ def edit(self, obj, **kwargs):
 
 @ovld
 def edit(
-    obj: (type, types.FunctionType, types.CodeType, types.ModuleType), **kwargs
+    obj: Union[type, types.FunctionType, types.CodeType, types.ModuleType],
+    **kwargs,
 ):
     recoder = make_recoder(obj)
     return recoder and SnekRecoder(recoder, obj, **kwargs)
 
 
 @ovld
-def edit(obj: (tuple, int, float, bool, type(None), frozenset), **kwargs):
+def edit(obj: Union[tuple, int, float, bool, type(None), frozenset], **kwargs):
     raise ValueError(f"Cannot edit data with type {type(obj).__qualname__}")
 
 
@@ -169,20 +171,22 @@ class EditableRepr(metaclass=OvldMC):
     @ovld
     def _run(
         self,
-        s: (
+        s: Union[
             exactly(str),
             exactly(type(None)),
             exactly(bool),
             exactly(int),
             exactly(float),
-        ),
+        ],
         *,
         depth,
     ):
         return H.atom(repr(s))
 
     @ovld
-    def _run(self, s: (types.FunctionType, types.ModuleType, type), *, depth):
+    def _run(
+        self, s: Union[types.FunctionType, types.ModuleType, type], *, depth
+    ):
         return self.ref(s)
 
     @ovld
@@ -315,13 +319,13 @@ def _merge(self, obj: list, m1: list, m2):
 @ovld
 def _merge(
     self,
-    obj: (
+    obj: Union[
         exactly(str),
         exactly(type(None)),
         exactly(bool),
         exactly(int),
         exactly(float),
-    ),
+    ],
     m1,
     m2,
 ):

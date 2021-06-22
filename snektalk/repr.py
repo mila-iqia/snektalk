@@ -1,8 +1,10 @@
 import os
 import types
-from types import FunctionType, MethodType, ModuleType, SimpleNamespace
+from types import FunctionType, MethodType, ModuleType
+from typing import Union
 
-from hrepr import H, Hrepr
+from hrepr import H
+from ovld import OvldBase, extend_super
 
 from .feat.edit import edit
 from .utils import format_libpath, join, represents
@@ -14,7 +16,7 @@ def shortname(obj):
     return getattr(obj, "__name__", f"<{type(obj).__name__}>")
 
 
-class SnekTalkHrepr(Hrepr):
+class SnekTalkHrepr(OvldBase):
     def collapsible(self, title, body, start_visible=False):
         body = self.H.div(self(body))
         if not start_visible:
@@ -27,6 +29,7 @@ class SnekTalkHrepr(Hrepr):
             body,
         )
 
+    @extend_super
     def hrepr(self, exc: Exception):
         exc_proper = self.H.div["hrepr-error", "hrepr-instance", "hreprl-h"](
             self.H.div["hrepr-title"](type(exc).__name__),
@@ -199,10 +202,11 @@ class SnekTalkHrepr(Hrepr):
 
         return self.H.instance(tbl, type=title, vertical=True)
 
-    def hrepr_short(self, clsm: (classmethod, staticmethod)):  # noqa: F811
+    @extend_super
+    def hrepr_short(self, clsm: Union[classmethod, staticmethod]):  # noqa: F811
         return self.H.defn(type(clsm).__name__, shortname(clsm.__func__))
 
-    def hrepr(self, clsm: (classmethod, staticmethod)):  # noqa: F811
+    def hrepr(self, clsm: Union[classmethod, staticmethod]):  # noqa: F811
         fn = clsm.__func__
         if self.state.depth == 0 and isinstance(fn, FunctionType):
             ed = edit(fn)

@@ -3,6 +3,7 @@ import os
 from types import SimpleNamespace
 
 from hrepr import H, Tag, hrepr, standard_html
+from hrepr.h import HType
 from hrepr.std import _extract_as
 
 from .debug import SnekTalkDb
@@ -146,7 +147,7 @@ def snekbreakpoint():
 @standard_html.variant(
     initial_state={"hjson": sktk_hjson, "requirejs_resources": []}
 )
-def sktk_html(self, node: type(H.include)):
+def sktk_html(self, node: HType.include):
     _, children, data = _extract_as(self, node, "include", path=None, type=None)
     if data.type is None or data.path is None:
         raise TypeError("H.include must have a type and a path")
