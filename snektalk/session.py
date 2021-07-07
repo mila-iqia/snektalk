@@ -233,7 +233,7 @@ class History:
 
 
 class Session:
-    def __init__(self, socket=None, history_file=None):
+    def __init__(self, socket=None, history_file=None, restart_command=None):
         self.tempkeep = deque(maxlen=10)
         self.lib = Lib(self)
         self.blt = vars(builtins)
@@ -243,6 +243,7 @@ class Session:
         self.sent_resources = set()
         self.last_prompt = ""
         self.last_nav = ""
+        self.restart_command = restart_command
         self.in_queue = deque()
         self.out_queue = deque()
         self.semaphores = defaultdict(lambda: threading.Semaphore(value=0))
@@ -252,6 +253,7 @@ class Session:
         self.history = History(history_file)
         self.dispatch = CommandDispatcher(
             {
+                "/restart": self.submit_command_restart,
                 "/attach[ \n]?(.*)": self.submit_command_attach,
                 "/detach[ \n]?(.*)": self.submit_command_detach,
                 "/kill[ \n]?(.*)": self.submit_command_kill,
@@ -461,6 +463,9 @@ class Session:
     ############
     # Commands #
     ############
+
+    def submit_command_restart(self, expr):
+        os.execvp("snektalk", self.restart_command)
 
     def submit_command_attach(self, expr, tname):
         tname = tname.strip()

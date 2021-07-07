@@ -90,9 +90,12 @@ def cli():
         "sock": socket,
     }
 
+    restart_command = sys.argv[0:]
+
     sess = serve(
         watch_args=watch_args,
         template={"title": module or script or "snektalk"},
+        restart_command=restart_command,
         **server_args,
     )
 

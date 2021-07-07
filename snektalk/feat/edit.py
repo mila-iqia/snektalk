@@ -1,13 +1,15 @@
+import ast
 import types
-from dataclasses import dataclass
-from itertools import count, product
+from itertools import product
 from typing import Union
 
-from hrepr import H, Interface, standard_terminal
+from hrepr import H, standard_terminal
 from jurigged import make_recoder
+from jurigged.codetools import Extent
 from ovld import OvldMC, exactly, ovld
+from ptera import Probe
 
-from ..utils import Interactor, ObjectFields, format_libpath, represents
+from ..utils import Interactor, ObjectFields, format_libpath, pastecode
 
 ########
 # edit #
@@ -44,6 +46,60 @@ def edit(obj: object, **kwargs):
 ######################
 # Python code editor #
 ######################
+
+
+@ovld
+def _probables(self, seq: list, path):
+    results = set()
+    for node in seq:
+        results |= self(node, path)
+    return results
+
+
+@ovld
+def _probables(self, node: Union[ast.FunctionDef, ast.AsyncFunctionDef], path):
+    func_path = (*path, node.name)
+    return (
+        self(node.body, func_path)
+        | self(node.args.args, func_path)
+        | self(node.args.posonlyargs, func_path)
+        | self(node.args.kwonlyargs, func_path)
+        | self(node.args.kwarg, func_path)
+        | self(node.args.vararg, func_path)
+        | self(node.decorator_list, path)
+        | self(node.args.defaults, path)
+        | self(node.args.kw_defaults, path)
+    )
+
+
+@ovld
+def _probables(self, node: ast.ClassDef, path):
+    cls_path = (*path, node.name)
+    return self(node.body, cls_path) | self(node.decorator_list, path)
+
+
+@ovld
+def _probables(self, node: ast.arg, path):
+    return {(*path, node.arg)}
+
+
+@ovld
+def _probables(self, node: ast.Name, path):
+    if isinstance(node.ctx, ast.Store):
+        return {(*path, node.id)}
+    else:
+        return set()
+
+
+@ovld
+def _probables(self, node: ast.AST, path):
+    return self(list(ast.iter_child_nodes(node)), path)
+
+
+@ovld  # pragma: no cover
+def _probables(self, thing: object, path):
+    # Just in case
+    return set()
 
 
 class SnekRecoder(Interactor):
@@ -87,6 +143,33 @@ class SnekRecoder(Interactor):
     def py_commit(self, new_source):
         if self.py_save(new_source):
             self.recoder.commit()
+
+    def py_probe(self, selection):
+        focus = self.recoder.focus
+        baseline = focus.stashed
+        ext = Extent(
+            filename=baseline.filename,
+            lineno=selection["startLineNumber"],
+            col_offset=selection["startColumn"],
+            end_lineno=selection["endLineNumber"],
+            end_col_offset=selection["endColumn"],
+        )
+        lines = self.recoder.focus.codestring.split("\n")
+        text = lines[ext.lineno - 1][
+            ext.col_offset - 1 : ext.end_col_offset - 1
+        ]
+        probables = [p for p in _probables(focus.node, ()) if p[-1] == text]
+        *path, varname = probables[0]
+
+        hier = list(focus.hierarchy())
+        names = [part.name for part in reversed(hier)]
+        names += path[len(names) - 1 :]
+        selector = "/" + "/".join(names) + " > " + varname
+
+        pastecode(
+            f'Probe("{selector}")',
+            vars={"Probe": (Probe, "from ptera import Probe")},
+        )
 
 
 ##########################

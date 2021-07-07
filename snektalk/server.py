@@ -98,8 +98,11 @@ def _launch(port=None, sock=None, open_browser=True, template={}, sess=None):
     app.run(sock=sock, register_sys_signals=False)
 
 
-def serve(watch_args=None, **kwargs):
-    sess = Session(history_file=get_config_path("history.json"))
+def serve(watch_args=None, restart_command=None, **kwargs):
+    sess = Session(
+        history_file=get_config_path("history.json"),
+        restart_command=restart_command,
+    )
     if watch_args is not None:
         jurigged.watch(**watch_args, logger=status_logger(sess))
 
