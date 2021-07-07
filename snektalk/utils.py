@@ -103,6 +103,34 @@ def pastecode(code, vars={}):
     sess.queue(command="pastecode", value=code)
 
 
+def newvar(prefix):
+    sess = current_session()
+    ev = sess.active_evaluator()
+    name = prefix
+    if ev is not None:
+        glb = ev.get_globals()
+        i = 2
+        while name in glb:
+            name = f"{prefix}{i}"
+            i += 1
+        glb[name] = None
+    return name
+
+
+def findvar(value, prefix="_"):
+    sess = current_session()
+    ev = sess.active_evaluator()
+    if ev is not None:
+        glb = ev.get_globals()
+        for k, v in glb.items():
+            if v is value:
+                return k
+        name = newvar(prefix)
+        glb[name] = value
+        return name
+    return None
+
+
 def _default_click(obj, evt):
     if evt.get("shiftKey", False):
         sess = current_session()
