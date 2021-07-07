@@ -9,7 +9,8 @@ from jurigged.codetools import Extent
 from ovld import OvldMC, exactly, ovld
 from ptera import Probe
 
-from ..utils import Interactor, ObjectFields, format_libpath, pastecode
+from ..analyze import viz
+from ..utils import Interactor, ObjectFields, format_libpath, newvar, pastecode
 
 ########
 # edit #
@@ -167,8 +168,11 @@ class SnekRecoder(Interactor):
         selector = "/" + "/".join(names) + " > " + varname
 
         pastecode(
-            f'Probe("{selector}")',
-            vars={"Probe": (Probe, "from ptera import Probe")},
+            f'viz({newvar("probe")} := Probe("{selector}"))',
+            vars={
+                "Probe": (Probe, "from ptera import Probe"),
+                "viz": (viz, "from snektalk import viz"),
+            },
         )
 
 

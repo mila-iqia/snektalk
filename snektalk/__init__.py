@@ -1,6 +1,9 @@
 import importlib
 import sys
 
+from ptera import Probe
+
+from .analyze import viz
 from .debug import SnekTalkDb
 from .evaluator import Evaluator
 from .lib import inject, snekprint as print

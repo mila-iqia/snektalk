@@ -378,3 +378,14 @@ body {
 .snek-input-mode {
     cursor: pointer;
 }
+
+.snek-suggestions {
+    border: 2px solid orange;
+}
+.snek-suggestion {
+    padding: 3px;
+    cursor: pointer;
+}
+.snek-suggestion:hover {
+    background-color: #f8f8f8;
+}
