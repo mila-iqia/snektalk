@@ -130,6 +130,7 @@ This will work for the whole duration of the remote process (note that the local
   * `?expr` -- Same as `/dir expr`
 * `/edit expr` -- Open an editor for the object returned by the expression
 * `/quit` -- Quit Snektalk
+* `/restart` -- Restart Snektalk with the same initial command
 * `/shell command` -- Run shell command
   * `//command` -- Same as `/shell command`
 * `/status` -- List all the status messages received so far
