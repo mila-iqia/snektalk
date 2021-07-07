@@ -1,6 +1,7 @@
 import os
 from itertools import count
 from types import FunctionType, MethodType
+from typing import Union
 
 from hrepr import H, hjson, hrepr
 
@@ -16,7 +17,7 @@ _count = count()
 
 
 @hjson.dump.variant
-def _sktk_hjson(self, fn: (MethodType, FunctionType)):
+def _sktk_hjson(self, fn: Union[MethodType, FunctionType]):
     method_id = callback_registry.register(fn)
     return f"$$SKTK({method_id})"
 
