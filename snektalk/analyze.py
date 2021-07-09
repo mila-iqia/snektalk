@@ -6,7 +6,7 @@ from ptera import op
 from .utils import findvar, pastecode
 
 
-class Viz:
+class Explorer:
     def __init__(self, probe):
         self.probe = probe
 
@@ -23,23 +23,31 @@ class Viz:
             self.probe, [a(self.probe) for a in analyzers.values()]
         )
 
-        def process(suggestions):
-            contents = H.div["snek-suggestions"](
-                [
-                    H.div["snek-suggestion"](
-                        sugg.description, onclick=sugg.output
-                    )
-                    for sugg in suggestions
-                ]
+        def makediv(suggestions):
+            return (
+                H.div["snek-suggestions"](
+                    [
+                        H.div["snek-suggestion"](
+                            sugg.description, onclick=sugg.output
+                        )
+                        for sugg in suggestions
+                    ]
+                )
+                if suggestions
+                else H.div["snek-suggestions"](
+                    H.div["snek-nosuggestion"]("Not enough data to analyze")
+                )
             )
-            fill_at(divid, contents)
+
+        def process(suggestions):
+            fill_at(divid, makediv(suggestions))
 
         self.probe.pipe(op.map(anal.suggest), op.throttle(1)).subscribe(process)
-        return H.div(id=divid)
+        return H.div(makediv([]), id=divid)
 
 
-def viz(probe):
-    print(Viz(probe))
+def explore(probe):
+    print(Explorer(probe))
 
 
 class Suggestion:

@@ -386,6 +386,11 @@ body {
     padding: 3px;
     cursor: pointer;
 }
+.snek-nosuggestion {
+    padding: 3px;
+    font-style: italic;
+    color: #888;
+}
 .snek-suggestion:hover {
     background-color: #f8f8f8;
 }

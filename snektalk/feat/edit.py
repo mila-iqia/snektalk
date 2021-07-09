@@ -7,9 +7,9 @@ from hrepr import H, standard_terminal
 from jurigged import make_recoder
 from jurigged.codetools import Extent
 from ovld import OvldMC, exactly, ovld
-from ptera import Probe
+from ptera import Probe, probing
 
-from ..analyze import viz
+from ..analyze import explore
 from ..utils import Interactor, ObjectFields, format_libpath, newvar, pastecode
 
 ########
@@ -145,7 +145,7 @@ class SnekRecoder(Interactor):
         if self.py_save(new_source):
             self.recoder.commit()
 
-    def py_probe(self, selection):
+    def _selector(self, selection):
         focus = self.recoder.focus
         baseline = focus.stashed
         ext = Extent(
@@ -166,13 +166,30 @@ class SnekRecoder(Interactor):
         names = [part.name for part in reversed(hier)]
         names += path[len(names) - 1 :]
         selector = "/" + "/".join(names) + " > " + varname
+        return selector
 
+    def py_explore(self, selection):
+        selector = self._selector(selection)
         pastecode(
-            f'viz({newvar("probe")} := Probe("{selector}"))',
+            f'explore({newvar("probe")} := Probe("{selector}"))',
             vars={
                 "Probe": (Probe, "from ptera import Probe"),
-                "viz": (viz, "from snektalk import viz"),
+                "explore": (explore, "from snektalk import explore"),
             },
+        )
+
+    def py_probe(self, selection):
+        selector = self._selector(selection)
+        pastecode(
+            f'Probe("{selector}")',
+            vars={"Probe": (Probe, "from ptera import Probe"),},
+        )
+
+    def py_local_probe(self, selection):
+        selector = self._selector(selection)
+        pastecode(
+            f'with probing("{selector}") as probe:\n    ',
+            vars={"probing": (probing, "from ptera import probing"),},
         )
 
 
