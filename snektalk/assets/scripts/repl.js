@@ -455,6 +455,16 @@ class Repl {
         this.atEnd = this.editor.createContextKey("atEnd", true);
         this.multiline = this.editor.createContextKey("multiline", false);
 
+        const setMultiline = value => {
+            this.multiline.set(value);
+            if (value) {
+                this.inputBox.classList.add("multiline");
+            }
+            else {
+                this.inputBox.classList.remove("multiline");
+            }
+        }
+
         this.editor.onDidChangeCursorPosition(() => {
             let position = editor.getPosition();
             let lineno = position.lineNumber;
@@ -465,7 +475,7 @@ class Repl {
 
         this.editor.getModel().onDidChangeContent(async () => {
             let total = editor.getModel().getLineCount();
-            this.multiline.set(
+            setMultiline(
                 total > 1
                 || editor.getModel().getLineContent(1).match(/[\(\[\{:]$|^@/)
             )
