@@ -13,14 +13,9 @@ class Explorer:
     def __hrepr__(self, H, hrepr):
         from .lib import fill_at
 
-        analyzers = {}
-
-        for entry_point in pkg_resources.iter_entry_points("snektalk.analyzer"):
-            analyzers[entry_point.name] = entry_point.load()
-
         divid = f"$analyze__{next(monitor_count)}"
         anal = Synthesizer(
-            self.probe, [a(self.probe) for a in analyzers.values()]
+            self.probe, [a(self.probe) for a in probe_analyzers.values()]
         )
 
         def makediv(suggestions):
@@ -168,3 +163,9 @@ class PutvarAnalyzer(Analyzer):
             self.suggestions[key_name].value = value
 
         return list(self.suggestions.values())
+
+
+probe_analyzers = {}
+
+for entry_point in pkg_resources.iter_entry_points("snektalk.analyzer"):
+    probe_analyzers[entry_point.name] = entry_point.load()
