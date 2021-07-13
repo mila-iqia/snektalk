@@ -18,7 +18,7 @@ coleo = "^0.2.2"
 jurigged = "^0.3.3"
 hrepr = "^0.4.0"
 ovld = "^0.3.2"
-ptera = "^0.3.5"
+ptera = "^0.3.6"
 sanic = "^20.9.1"
 
 [tool.poetry.dev-dependencies]

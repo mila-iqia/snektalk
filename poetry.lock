@@ -325,7 +325,7 @@ dev = ["pre-commit", "tox"]
 
 [[package]]
 name = "ptera"
-version = "0.3.5"
+version = "0.3.6"
 description = "Call graph addressing library."
 category = "main"
 optional = false
@@ -534,7 +534,7 @@ python-versions = ">=3.6.1"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "ee0ed2e37c12023faf1c3cfd954dca020f8cdff685fa1269e66a079c432bb4a1"
+content-hash = "978b79c7c80eef45eb5f2daff2942537d86cb4f4df3ad2c2d18759ad1b688826"
 
 [metadata.files]
 aiofiles = [
@@ -756,8 +756,8 @@ pluggy = [
     {file = "pluggy-0.13.1.tar.gz", hash = "sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0"},
 ]
 ptera = [
-    {file = "ptera-0.3.5-py3-none-any.whl", hash = "sha256:afd6fd752155e36a4f68833d4e12972370d6a69b3b545005b0638174834e400c"},
-    {file = "ptera-0.3.5.tar.gz", hash = "sha256:e3b2fde46deeff07ce3cb5c5398be743c9ca71c7c94c7ad64c588d332fe8f6e0"},
+    {file = "ptera-0.3.6-py3-none-any.whl", hash = "sha256:b041ef257a9e254ca70fbf7d8fef1307989477a3f954b2d85af0236c29c38bc2"},
+    {file = "ptera-0.3.6.tar.gz", hash = "sha256:d06ab4fa1385ce9f1a70ad5fc261306b000616b470ee00bd69fbd11aaae4e1eb"},
 ]
 py = [
     {file = "py-1.10.0-py2.py3-none-any.whl", hash = "sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a"},
