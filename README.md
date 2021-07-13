@@ -8,8 +8,8 @@ Snektalk is a groundbreaking new kind of REPL.
 * Live code editing
 * Rich and interactive object representations
 * Built-in debugger
+* Inspect a program's internal state
 * Connect to remote processes
-* Not another Jupyter clone
 
 # Install
 
@@ -98,6 +98,11 @@ It is also easy to configure visualizations so that various interactions call Py
 ![thread](https://user-images.githubusercontent.com/599820/116955232-f0fe4b80-ac5f-11eb-8578-079f5e753052.gif)
 
 You may use `snektalk -t` to start the main script in a thread, giving you immediate access to the REPL. This will allow you to inspect or fiddle with the global state while the script is running, among other things.
+
+## Probing
+
+Through [ptera](https://github.com/breuleux/ptera), Snektalk provides easy ways to probe variables anywhere inside your program.
+
 
 # Using on a remote
 

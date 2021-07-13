@@ -399,8 +399,8 @@ body {
 .snek-input .monaco-editor {
     background-color: white;
 }
-
+/* 
 .snek-input.multiline .monaco-editor-background,
 .snek-input.multiline .monaco-editor {
     background-color: #efe;
-}
+} */
