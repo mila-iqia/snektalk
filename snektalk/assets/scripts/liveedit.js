@@ -183,7 +183,7 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
             this.editor.addAction({
                 id: 'sktk-probe',
                 label: 'Probe',
-                keybindings: [KM.CtrlCmd | KM.Alt | KC.KEY_P],
+                keybindings: [KM.chord(KM.CtrlCmd | KM.Alt | KC.KEY_P, KC.KEY_P)],
                 precondition: null,
                 keybindingContext: null,
                 contextMenuGroupId: '99_probe',
@@ -196,7 +196,7 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
             this.editor.addAction({
                 id: 'sktk-local-probe',
                 label: 'Local probe',
-                keybindings: [KM.CtrlCmd | KM.Alt | KC.KEY_L],
+                keybindings: [KM.chord(KM.CtrlCmd | KM.Alt | KC.KEY_P, KC.KEY_L)],
                 precondition: null,
                 keybindingContext: null,
                 contextMenuGroupId: '99_probe',
@@ -209,13 +209,39 @@ define(["vs/editor/editor.main", "scripts/repl"], (monaco, repl) => {
             this.editor.addAction({
                 id: 'sktk-explore',
                 label: 'Explore',
-                keybindings: [KM.CtrlCmd | KM.Alt | KC.KEY_E],
+                keybindings: [KM.chord(KM.CtrlCmd | KM.Alt | KC.KEY_P, KC.KEY_E)],
                 precondition: null,
                 keybindingContext: null,
                 contextMenuGroupId: '99_probe',
                 contextMenuOrder: 1,
                 run: ed => {
                     this.options.py.explore(selectedWord(ed));
+                }
+            });
+
+            this.editor.addAction({
+                id: 'sktk-local-explore',
+                label: 'Local explore',
+                keybindings: [KM.chord(KM.CtrlCmd | KM.Alt | KC.KEY_P, KC.KEY_X)],
+                precondition: null,
+                keybindingContext: null,
+                contextMenuGroupId: '99_probe',
+                contextMenuOrder: 1,
+                run: ed => {
+                    this.options.py.local_explore(selectedWord(ed));
+                }
+            });
+
+            this.editor.addAction({
+                id: 'sktk-accumulate',
+                label: 'Accumulate',
+                keybindings: [KM.chord(KM.CtrlCmd | KM.Alt | KC.KEY_P, KC.KEY_A)],
+                precondition: null,
+                keybindingContext: null,
+                contextMenuGroupId: '99_probe',
+                contextMenuOrder: 1,
+                run: ed => {
+                    this.options.py.accumulate(selectedWord(ed));
                 }
             });
         }

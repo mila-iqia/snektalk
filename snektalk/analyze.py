@@ -6,6 +6,13 @@ from ptera import op
 from .utils import findvar, pastecode
 
 
+def findprobe(probe):
+    if lp := getattr(probe, "_local_probe", None):
+        return True, findvar(lp, "lprobe")
+    else:
+        return False, findvar(probe, "probe")
+
+
 class Explorer:
     def __init__(self, probe):
         self.probe = probe
@@ -99,7 +106,7 @@ class Monitor:
 def monitor(obs):
     m = Monitor()
     obs.subscribe(m.update)
-    return m
+    print(m)
 
 
 class MonitorAnalyzer(Analyzer):
@@ -113,16 +120,16 @@ class MonitorAnalyzer(Analyzer):
         return self.suggestions
 
     def onclick(self, _):
-        # m = monitor(self.obs.pipe(op.throttle(0.1)))
-        # print(m)
-        prb = findvar(self.obs, "probe")
-        pastecode(
-            f"monitor({prb}.pipe(op.throttle(0.1)))",
-            {
-                "monitor": (monitor, "from snektalk.analyze import monitor"),
-                "op": (monitor, "from ptera import op"),
-            },
-        )
+        lcl, prb = findprobe(self.obs)
+        reqs = {
+            "monitor": (monitor, "from snektalk.analyze import monitor"),
+            "op": (monitor, "from ptera import op"),
+        }
+        if lcl:
+            code = f"with {prb} as probe:\n    monitor(probe.pipe(op.throttle(0.1)))"
+        else:
+            code = f"monitor({prb}.pipe(op.throttle(0.1)))"
+        pastecode(code, reqs)
 
 
 ##########
