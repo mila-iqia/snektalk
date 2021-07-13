@@ -12,7 +12,7 @@ from PIL import Image
 from ptera import op
 
 from snektalk import Interactor, pastecode
-from snektalk.analyze import Analyzer, monitor_count, probe_analyzers
+from snektalk.analyze import Analyzer, findprobe, monitor_count, probe_analyzers
 from snektalk.lib import fill_at
 
 
@@ -75,13 +75,16 @@ class LinePlotSuggestion:
             self.description = f"Line plot '{key_name}' over time"
 
     def output(self, _):
-        pastecode(
-            "plot(probe.pipe(op.throttle(0.1)))",
-            {
-                "plot": (plot, "from demo_analyzers import plot"),
-                "op": (op, "from ptera import op"),
-            },
-        )
+        reqs = {
+            "plot": (plot, "from demo_analyzers import plot"),
+            "op": (op, "from ptera import op"),
+        }
+        lcl, prb = findprobe(self.obs)
+        if lcl:
+            code = f"with {prb} as probe:\n    plot(probe.pipe(op.throttle(0.1)))"
+        else:
+            code = f"plot({prb}.pipe(op.throttle(0.1)))"
+        pastecode(code, reqs)
 
 
 class LinePlotAnalyzer(Analyzer):
@@ -130,13 +133,16 @@ class HistogramSuggestion:
             self.description = f"Distribution of values for '{key_name}'"
 
     def output(self, _):
-        pastecode(
-            f'histo(probe.pipe(op.throttle(0.1), op.getitem("{self.key_name}")))',
-            {
-                "histo": (histo, "from demo_analyzers import histo"),
-                "op": (op, "from ptera import op"),
-            },
-        )
+        reqs = {
+            "histo": (histo, "from demo_analyzers import histo"),
+            "op": (op, "from ptera import op"),
+        }
+        lcl, prb = findprobe(self.obs)
+        if lcl:
+            code = f'with {prb} as probe:\n    histo(probe.pipe(op.throttle(0.1), op.getitem("{self.key_name}")))'
+        else:
+            code = f'histo({prb}.pipe(op.throttle(0.1), op.getitem("{self.key_name}")))'
+        pastecode(code, reqs)
 
 
 class HistogramAnalyzer(Analyzer):
@@ -197,13 +203,16 @@ class ImageSuggestion:
             self.description = f"Image of '{key_name}'"
 
     def output(self, _):
-        pastecode(
-            f'image(probe.pipe(op.throttle(0.1)), key_name="{self.key_name}")',
-            {
-                "image": (image, "from demo_analyzers import image"),
-                "op": (op, "from ptera import op"),
-            },
-        )
+        reqs = {
+            "image": (image, "from demo_analyzers import image"),
+            "op": (op, "from ptera import op"),
+        }
+        lcl, prb = findprobe(self.obs)
+        if lcl:
+            code = f'with {prb} as probe:\n    image(probe.pipe(op.throttle(0.1)), key_name="{self.key_name}")'
+        else:
+            code = f'image({prb}.pipe(op.throttle(0.1)), key_name="{self.key_name}")'
+        pastecode(code, reqs)
 
 
 class ImageAnalyzer(Analyzer):
