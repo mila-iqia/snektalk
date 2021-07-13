@@ -103,6 +103,7 @@ You may use `snektalk -t` to start the main script in a thread, giving you immed
 
 Through [ptera](https://github.com/breuleux/ptera), Snektalk provides easy ways to probe variables anywhere inside your program.
 
+![accumulate](https://user-images.githubusercontent.com/599820/125383483-793a5480-e365-11eb-9f79-343d4f0cfe53.gif)
 
 # Using on a remote
 
