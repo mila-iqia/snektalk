@@ -1,4 +1,5 @@
 import asyncio
+import atexit
 import builtins
 import ctypes
 import inspect
@@ -465,6 +466,7 @@ class Session:
     ############
 
     def submit_command_restart(self, expr):
+        atexit._run_exitfuncs()
         os.execvp("snektalk", self.restart_command)
 
     def submit_command_attach(self, expr, tname):
