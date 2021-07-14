@@ -6,11 +6,34 @@ import demo_analyzers
 from graph import Graph
 from snektalk import pastevar
 
-random.seed(1234)
+
+def bisect(arr, key):
+    lo = -1
+    hi = len(arr)
+    while lo < hi - 1:
+        mid = lo + (hi - lo) // 2
+        if (elem := arr[mid]) > key:
+            hi = mid
+        else:
+            lo = mid
+    return lo + 1
+
+
+def bisect_test(key=1234):
+    arr = [random.randint(0, 10000) for i in range(100)]
+    arr.sort()
+    split = bisect(arr, key)
+    return {"less": arr[:split], "more": arr[split:]}
 
 
 def foo(x):
     return x * x
+
+
+@dataclass
+class Point:
+    x: int
+    y: int
 
 
 class Color:
@@ -41,31 +64,7 @@ def random_colors(n=10):
     return results
 
 
-@dataclass
-class Point:
-    x: int
-    y: int
-
-
-def bisect(arr, key):
-    lo = -1
-    hi = len(arr)
-    while lo < hi - 1:
-        mid = lo + (hi - lo) // 2
-        if (elem := arr[mid]) > key:
-            hi = mid
-        else:
-            lo = mid
-    return lo + 1
-
-
-def bisect_test(key=1234):
-    arr = [random.randint(0, 10000) for i in range(100)]
-    arr.sort()
-    split = bisect(arr, key)
-    return {"less": arr[:split], "more": arr[split:]}
-
-
 if __name__ == "__main__":
+    random.seed(1234)
     print("Hello there!")
-    print(random_colors())
+    print(random_colors(), swatch_size=50)
