@@ -7,7 +7,7 @@ from hrepr import H, standard_terminal
 from jurigged import make_recoder
 from jurigged.codetools import Extent
 from ovld import OvldMC, exactly, ovld
-from ptera import Probe, accumulate, probing
+from ptera import Probe, accumulate, op, probing
 
 from ..analyze import explore
 from ..utils import Interactor, ObjectFields, format_libpath, newvar, pastecode
@@ -184,14 +184,20 @@ class SnekRecoder(Interactor):
         selector = self._selector(selection)
         pastecode(
             f'Probe("{selector}")',
-            vars={"Probe": (Probe, "from ptera import Probe"),},
+            vars={
+                "Probe": (Probe, "from ptera import Probe"),
+                "op": (op, "from ptera import op"),
+            },
         )
 
     def py_local_probe(self, selection):
         selector = self._selector(selection)
         pastecode(
             f'with probing("{selector}") as probe:\n    ',
-            vars={"probing": (probing, "from ptera import probing"),},
+            vars={
+                "probing": (probing, "from ptera import probing"),
+                "op": (op, "from ptera import op"),
+            },
         )
 
     def py_local_explore(self, selection):
