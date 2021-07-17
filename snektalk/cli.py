@@ -1,3 +1,4 @@
+import os
 import sys
 from types import SimpleNamespace
 
@@ -12,6 +13,8 @@ from .server import serve
 
 
 def main():
+    sys.path.insert(0, os.curdir)
+
     mod, run, sess, thread = run_cli(cli)
 
     try:
