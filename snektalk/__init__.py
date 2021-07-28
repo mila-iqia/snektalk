@@ -3,6 +3,7 @@ import sys
 
 from ptera import Probe
 
+from . import plugins
 from .analyze import explore
 from .debug import SnekTalkDb
 from .evaluator import Evaluator

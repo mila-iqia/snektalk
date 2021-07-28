@@ -32,9 +32,8 @@ flake8 = "^3.8.4"
 snektalk = "snektalk.cli:main"
 sktk = "snektalk.cli:main"
 
-[tool.poetry.plugins."snektalk.analyzer"]
-monitor = "snektalk.analyze:MonitorAnalyzer"
-putvar = "snektalk.analyze:PutvarAnalyzer"
+[tool.poetry.plugins.snektalk]
+default = "snektalk.plugins.default:default_plugin"
 
 [tool.black]
 line-length = 80

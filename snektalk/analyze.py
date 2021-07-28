@@ -1,6 +1,5 @@
 from itertools import count
 
-import pkg_resources
 from ptera import op
 
 from .utils import findvar, pastecode
@@ -173,6 +172,3 @@ class PutvarAnalyzer(Analyzer):
 
 
 probe_analyzers = {}
-
-for entry_point in pkg_resources.iter_entry_points("snektalk.analyzer"):
-    probe_analyzers[entry_point.name] = entry_point.load()
