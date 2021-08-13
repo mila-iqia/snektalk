@@ -168,15 +168,78 @@ class PopupNav {
 }
 
 
+class PinPane {
+
+    constructor(element) {
+        this.repl = null
+        this.element = element;
+    }
+
+    setup(repl) {
+        this.repl = repl;
+        this.repl.addClickHandler(
+            200,
+            {"cmdCtrl": true, "altKey": true, "shiftKey": false},
+            "pinnable",
+            this.clickHandler.bind(this),
+        )
+    }
+
+    clickHandler(evt, target) {
+        this.pin(target);
+        return true;
+    }
+
+    pin(elem) {
+        if (!elem.$referenceParent) {
+            elem.$referenceParent = elem.parentElement;
+        }
+        let parent = elem.$referenceParent;
+
+        let make_button = () => {
+            let pinbutton = document.createElement("span");
+            pinbutton.className = "snek-pinbutton";
+            pinbutton.innerHTML = `<svg width="24" height="24" fill="#aaa" transform="scale(0.75, 0.75)" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"><path d=" M 725 88C 746 88 762 104 763 125C 763 125 763 188 763 188C 763 242 725 287 675 287C 675 287 641 287 641 287C 641 287 659 466 659 466C 690 473 717 489 734 513C 756 544 763 583 763 625C 762 646 746 662 725 663C 725 663 600 663 600 663C 600 663 563 663 563 663C 563 663 437 663 437 663C 437 663 400 663 400 663C 400 663 275 663 275 663C 254 662 238 646 238 625C 238 583 244 544 266 513C 283 489 310 473 341 466C 341 466 359 287 359 287C 359 287 325 287 325 287C 300 287 279 276 264 261C 249 246 238 225 238 200C 238 158 238 167 238 125C 238 104 254 88 275 88C 275 88 725 88 725 88M 563 710C 563 710 563 850 563 850C 563 856 561 862 559 867C 559 867 534 917 534 917C 527 929 514 937 500 937C 486 937 473 929 466 917C 466 917 441 867 441 867C 439 862 438 856 437 850C 437 850 437 710 437 710C 437 710 563 710 563 710"/></svg>`
+            pinbutton.onclick = event => {
+                event.preventDefault();
+                event.stopPropagation();
+                this.pin(elem);
+            }
+            return pinbutton;
+        }
+
+        if (!elem.$pinned) {
+            let wrapper = document.createElement("div");
+            if (!elem.$onclick) {
+                elem.$onclick = elem.onclick;
+            }
+            let pinbutton = make_button();
+            parent.replaceChild(pinbutton, elem);
+            this.element.appendChild(wrapper);
+            wrapper.appendChild(elem);
+            elem.$wrapper = wrapper;
+            elem.$pinned = pinbutton;
+        }
+        else {
+            this.element.removeChild(elem.$wrapper);
+            parent.replaceChild(elem, elem.$pinned);
+            elem.$pinned = false;
+        }
+    }
+}
+
+
 class Repl {
 
     constructor(target) {
+        this.clickHandlers = [];
         this.container = target;
         this.options = {};
         this.lib = {};
         this.pane = target.querySelector(".snek-pane");
         this.outerPane = target.querySelector(".snek-outer-pane");
-        this.pinpane = target.querySelector(".snek-pin-pane");
+        this.pinpane = new PinPane(target.querySelector(".snek-pin-pane"));
+        this.pinpane.setup(this);
         this.inputOuter = target.querySelector(".snek-input-box");
         this.inputBox = target.querySelector(".snek-input");
         this.inputMode = target.querySelector(".snek-input-mode");
@@ -235,7 +298,35 @@ class Repl {
         window.snektalk = this;
         this.$currid = 0;
         this.$responseMap = {};
+
+        this.addClickHandler(0, {}, null, this.clickHandlerDflt.bind(this));
+        this.addClickHandler(100, {"cmdCtrl": true, "altKey": false, "shiftKey": false}, "objid", this.clickHandlerObj.bind(this));
+
         exports.mainRepl = this;
+    }
+
+    addClickHandler(priority, keys, attr, handler) {
+        this.clickHandlers.push([priority, keys, attr, handler]);
+        this.clickHandlers.sort((a, b) => b[0] - a[0])
+    }
+
+    clickHandlerObj(evt, target) {
+        this.sktk(parseInt(target.getAttribute("objid")));
+        return true;
+    }
+
+    clickHandlerDflt(evt, target) {
+        if (target.onclick !== null
+            || target.onmousedown !== null
+            || target.ondblclick !== null
+            || target.tagName === "A") {
+            // Stop if non-default behavior or link
+
+            return true
+        }
+        else {
+            return false
+        }
     }
 
     $globalKDEvent(evt) {
@@ -282,28 +373,26 @@ class Repl {
     }
 
     $globalClickEvent(evt) {
-        let cmdctrl = isMac ? (evt.metaKey && !evt.ctrlKey) : evt.ctrlKey;
+        evt.cmdCtrl = isMac ? (evt.metaKey && !evt.ctrlKey) : evt.ctrlKey;
 
         if (evt.detail === 2) {
             // Double-click
             return;
         }
         let target = evt.target;
-        while (target) {
-            if (target.onclick !== null
-                || target.onmousedown !== null
-                || target.ondblclick !== null
-                || target.tagName === "A") {
-                // Stop if non-default behavior or link
-                break;
-            }
-            else if (cmdctrl && evt.altKey && !evt.shiftKey && target.getAttribute("pinnable") !== null) {
-                this.pin(target);
-                break;
-            }
-            else if (cmdctrl && !evt.altKey && !evt.shiftKey && target.getAttribute("objid") !== null) {
-                this.sktk(parseInt(target.getAttribute("objid")));
-                break;
+        outer_loop: while (target) {
+            handler_loop: for (let [_, keys, attr, handler] of this.clickHandlers) {
+                for (let key in keys) {
+                    if (evt[key] != keys[key]) {
+                        continue handler_loop;
+                    }
+                }
+                if (attr && target.getAttribute(attr) === null) {
+                    continue handler_loop;
+                }
+                if (handler(evt, target)) {
+                    break outer_loop;
+                }
             }
             target = target.parentElement;
         }
@@ -374,43 +463,6 @@ class Repl {
             evt.preventDefault();
             evt.stopPropagation();
             execNow();
-        }
-    }
-
-    pin(elem) {
-        if (!elem.$referenceParent) {
-            elem.$referenceParent = elem.parentElement;
-        }
-        let parent = elem.$referenceParent;
-
-        let make_button = () => {
-            let pinbutton = document.createElement("span");
-            pinbutton.className = "snek-pinbutton";
-            pinbutton.innerHTML = `<svg width="24" height="24" fill="#aaa" transform="scale(0.75, 0.75)" viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg"><path d=" M 725 88C 746 88 762 104 763 125C 763 125 763 188 763 188C 763 242 725 287 675 287C 675 287 641 287 641 287C 641 287 659 466 659 466C 690 473 717 489 734 513C 756 544 763 583 763 625C 762 646 746 662 725 663C 725 663 600 663 600 663C 600 663 563 663 563 663C 563 663 437 663 437 663C 437 663 400 663 400 663C 400 663 275 663 275 663C 254 662 238 646 238 625C 238 583 244 544 266 513C 283 489 310 473 341 466C 341 466 359 287 359 287C 359 287 325 287 325 287C 300 287 279 276 264 261C 249 246 238 225 238 200C 238 158 238 167 238 125C 238 104 254 88 275 88C 275 88 725 88 725 88M 563 710C 563 710 563 850 563 850C 563 856 561 862 559 867C 559 867 534 917 534 917C 527 929 514 937 500 937C 486 937 473 929 466 917C 466 917 441 867 441 867C 439 862 438 856 437 850C 437 850 437 710 437 710C 437 710 563 710 563 710"/></svg>`
-            pinbutton.onclick = event => {
-                event.preventDefault();
-                event.stopPropagation();
-                this.pin(elem);
-            }
-            return pinbutton;    
-        }
-
-        if (!elem.$pinned) {
-            let wrapper = document.createElement("div");
-            if (!elem.$onclick) {
-                elem.$onclick = elem.onclick;
-            }
-            let pinbutton = make_button();
-            parent.replaceChild(pinbutton, elem);
-            this.pinpane.appendChild(wrapper);
-            wrapper.appendChild(elem);
-            elem.$wrapper = wrapper;
-            elem.$pinned = pinbutton;
-        }
-        else {
-            this.pinpane.removeChild(elem.$wrapper);
-            parent.replaceChild(elem, elem.$pinned);
-            elem.$pinned = false;
         }
     }
 
