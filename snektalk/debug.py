@@ -9,12 +9,14 @@ from .evaluator import Evaluator
 from .session import current_session
 from .utils import ReadOnly, format_libpath
 
-_here = os.path.dirname(__file__)
-
 
 class SnekTalkDb(bdb.Bdb):
     # Note: Many methods have been lifted from pdb.py in the standard lib
     # and slightly adapted
+
+    def __init__(self, skip=[]):
+        skip = ["snektalk.*", "ovld.*", *skip]
+        super().__init__(skip=skip)
 
     def get_globals(self):
         return self.evaluator.get_globals()
@@ -31,8 +33,7 @@ class SnekTalkDb(bdb.Bdb):
         self.last_method = (lambda *_: None), None
 
     def user_line(self, frame):
-        if frame.f_code.co_filename.startswith(_here):
-            # Avoid running the debugger in snektalk code
+        if not self.stop_here(frame):
             self.set_continue()
         elif getattr(self, "step_now", False):
             self.step_now = False
@@ -77,6 +78,20 @@ class SnekTalkDb(bdb.Bdb):
                     self.do(expr)
                 elif cmd["command"] == "noop":
                     pass
+
+    def move_frame(self, direction):
+        new = self.current + direction
+        if new < 0:
+            new = 0
+        elif new >= len(self.stack):
+            new = len(self.stack)
+
+        if new != self.current:
+            self.current = new
+            if not self.stop_here(self.get_frame()):
+                return self.move_frame(direction)
+
+        return self.current
 
     def error(self, message):
         print(H.i(message, style="color:red"))
@@ -161,10 +176,8 @@ class SnekTalkDb(bdb.Bdb):
         except ValueError:
             self.error("Invalid frame count (%s)" % arg)
             return
-        if count < 0:
-            self.current = 0
-        else:
-            self.current = max(0, self.current - count)
+        for _ in range(count):
+            self.move_frame(-1)
 
     def command_down(self, arg, gs, ls):
         """<b>d(own) [count]</b>
@@ -180,10 +193,8 @@ class SnekTalkDb(bdb.Bdb):
         except ValueError:
             self.error("Invalid frame count (%s)" % arg)
             return
-        if count < 0:
-            self.current = len(self.stack) - 1
-        else:
-            self.current = min(len(self.stack) - 1, self.current + count)
+        for _ in range(count):
+            self.move_frame(1)
 
     def command_help(self, arg, gs, ls):
         """<b>h(elp)</b>
