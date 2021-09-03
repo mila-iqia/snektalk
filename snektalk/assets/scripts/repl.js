@@ -292,7 +292,7 @@ class Repl {
         this.nav = target.querySelector(".snek-nav");
         this.statusHistory = document.createElement("div");
         this.statusHistory.className = "snek-status-history";
-        this._setupEditor(this.inputBox);
+        this.$$setupEditor(this.inputBox);
 
         this.popups = {
             history: new PopupNav({
@@ -327,19 +327,19 @@ class Repl {
 
         this.expectedContent = null;
 
-        target.onclick = this.$globalClickEvent.bind(this);
-        this.addKeyboardHandlers();
+        target.onclick = this.$$globalClickEvent.bind(this);
+        this.$$addKeyboardHandlers();
         window.$$SKTK = this.sktk.bind(this);
         window.snektalk = this;
         this.$currid = 0;
         this.$responseMap = {};
 
-        this.addClickHandlers();
+        this.$$addClickHandlers();
 
         exports.mainRepl = this;
     }
 
-    addClickHandlers() {
+    $$addClickHandlers() {
         // Default behavior
         this.events.click.add(
             0,
@@ -376,11 +376,11 @@ class Repl {
         );
     }
 
-    bindKey(key, fn) {
-        return Mousetrap.bind(key, fn);
-    }
+    //////////////////
+    // Initializers //
+    //////////////////
 
-    addKeyboardHandlers() {
+    $$addKeyboardHandlers() {
         const cycleEditor = direction => {
             // Find alive and visible editors
             let editors = Array
@@ -423,7 +423,7 @@ class Repl {
         });
     }
 
-    $globalClickEvent(evt) {
+    $$globalClickEvent(evt) {
         evt.cmdCtrl = isMac ? (evt.metaKey && !evt.ctrlKey) : evt.ctrlKey;
 
         if (evt.detail === 2) {
@@ -461,67 +461,7 @@ class Repl {
         this.togglePopup(null);
     }
 
-    get_external(id) {
-        return async (...args) => {
-            let response_id = this.$currid++;
-            let response = new Promise(
-                (resolve, reject) => {
-                    this.$responseMap[response_id] = {resolve, reject};
-                }
-            );
-            this.send({
-                command: "callback",
-                id: id,
-                response_id: response_id,
-                arguments: args
-            });
-            return await response;
-        }
-    }
-
-    sktk(id, ...args) {
-        // Call a Python function by id
-        const exec = this.get_external(id);
-
-        const execNow = async () => {
-            try {
-                await exec({
-                    type: evt.type,
-                    button: evt.button,
-                    shiftKey: evt.shiftKey,
-                    altKey: evt.altKey,
-                    ctrlKey: evt.ctrlKey,
-                    metaKey: evt.metaKey,
-                    key: evt.key,
-                    offsetX: evt.offsetX,
-                    offsetY: evt.offsetY,
-                });
-            }
-            catch(exc) {
-                let message = `${exc.type}: ${exc.message}`;
-                this.setStatus({type: "error", value: message});
-                throw exc;
-            }
-        }
-
-        let evt = window.event;
-
-        if (evt === undefined || evt.type === "load") {
-            // If not in an event handler, we return the execution
-            // function directly
-            return exec;
-        }
-        else {
-            // The call is in an event handler like onclick, for example
-            // <div onclick="$$SKTK(15)">...</div>, so we execute it
-            // immediately.
-            evt.preventDefault();
-            evt.stopPropagation();
-            execNow();
-        }
-    }
-
-    event_updateHeight() {
+    $$event_updateHeight() {
         if (!this.ignoreEvent) {
             const contentHeight = Math.min(
                 this.options.max_height || 500,
@@ -537,7 +477,7 @@ class Repl {
         }
     }
 
-    _setupEditor(target) {
+    $$setupEditor(target) {
         target.style.height = "19px";
         let editor = monaco.editor.create(target, {
             value: "",
@@ -555,7 +495,7 @@ class Repl {
         this.editor = editor;
         target.classList.add("snek-editor-cyclable");
         target.$editor = this.editor;
-        this.editor.onDidContentSizeChange(this.event_updateHeight.bind(this));
+        this.editor.onDidContentSizeChange(this.$$event_updateHeight.bind(this));
 
         this.popupActive = this.editor.createContextKey("popupActive", false);
         this.atBeginning = this.editor.createContextKey("atBeginning", true);
@@ -706,12 +646,83 @@ class Repl {
         this.editor = editor;
     }
 
+    /////////////
+    // Methods //
+    /////////////
+
+    bindKey(key, fn) {
+        return Mousetrap.bind(key, fn);
+    }
+
+    get_external(id) {
+        return async (...args) => {
+            let response_id = this.$currid++;
+            let response = new Promise(
+                (resolve, reject) => {
+                    this.$responseMap[response_id] = {resolve, reject};
+                }
+            );
+            this.send({
+                command: "callback",
+                id: id,
+                response_id: response_id,
+                arguments: args
+            });
+            return await response;
+        }
+    }
+
+    sktk(id, ...args) {
+        // Call a Python function by id
+        const exec = this.get_external(id);
+
+        const execNow = async () => {
+            try {
+                await exec({
+                    type: evt.type,
+                    button: evt.button,
+                    shiftKey: evt.shiftKey,
+                    altKey: evt.altKey,
+                    ctrlKey: evt.ctrlKey,
+                    metaKey: evt.metaKey,
+                    key: evt.key,
+                    offsetX: evt.offsetX,
+                    offsetY: evt.offsetY,
+                });
+            }
+            catch(exc) {
+                let message = `${exc.type}: ${exc.message}`;
+                this.setStatus({type: "error", value: message});
+                throw exc;
+            }
+        }
+
+        let evt = window.event;
+
+        if (evt === undefined || evt.type === "load") {
+            // If not in an event handler, we return the execution
+            // function directly
+            return exec;
+        }
+        else {
+            // The call is in an event handler like onclick, for example
+            // <div onclick="$$SKTK(15)">...</div>, so we execute it
+            // immediately.
+            evt.preventDefault();
+            evt.stopPropagation();
+            execNow();
+        }
+    }
+
     async togglePopup(name) {
         this.activePopup = null;
         for (const popupName in this.popups) {
             const pop = this.popups[popupName];
             if (name == popupName && !pop.visible) {
-                const entries = await this.lib.populate_popup(name, this.editor.getValue());
+                const entries = await this.lib.populate_popup(
+                    name,
+                    this.editor.getValue(),
+                );
                 if (entries !== null) {
                     pop.setEntries(entries);
                 }
@@ -751,7 +762,7 @@ class Repl {
         return rval;
     }
 
-    read_only_editor(text, language) {
+    readOnlyEditor(text, language) {
         let elem = document.createElement("div");
         elem.style.width = this.pane.offsetWidth - 100;
 
@@ -760,44 +771,6 @@ class Repl {
         .then(result => { elem.innerHTML = result; });
 
         return elem;
-    }
-
-    find_method(prefix, name, dflt) {
-        let method_name = `${prefix}_${name}`;
-        let method = this[method_name] || dflt;
-        return method && method.bind(this);
-    }
-
-    send(data) {
-        this.find_method("send", data.command, this.send_default)(data);
-    }
-
-    send_submit(data) {
-        let cmd = /^\/([^ ]+)( .*)?/.exec(data.expr);
-        let method = cmd && this.find_method("cmd", cmd[1], null);
-        if (method !== null) {
-            method(cmd[0], cmd[2]);
-        }
-        else {
-            this.send_default(data);
-        }
-    }
-
-    send_default(data) {
-        if (this.closed) {
-            this.setStatus({
-                type: "error",
-                value: "operation failed because the connection is closed",
-            });
-        }
-        else {
-            this.socket.send(JSON.stringify(data));
-        }
-    }
-
-    cmd_status(fullexpr, arg) {
-        this.recv_echo({value: fullexpr});
-        this.append(this.statusHistory, "plain");
     }
 
     append(elem, type, target) {
@@ -835,6 +808,84 @@ class Repl {
             50
         );
     }
+
+    find_method(prefix, name, dflt) {
+        let method_name = `${prefix}_${name}`;
+        let method = this[method_name] || dflt;
+        return method && method.bind(this);
+    }
+
+    send(data) {
+        this.find_method("send", data.command, this.send_default)(data);
+    }
+
+    connect() {
+        let port = window.location.port;
+        let socket = new WebSocket(`ws://localhost:${port}/sktk?session=main`);
+
+        socket.addEventListener('message', event => {
+            let data = JSON.parse(event.data);
+            this.find_method("recv", data.command, this.recv_bad)(data)
+        });
+
+        socket.addEventListener('error', event => {
+            this.closed = true;
+            this.setStatus({
+                type: "error",
+                value: "a connection error occurred",
+            });
+        });
+
+        socket.addEventListener('close', event => {
+            this.closed = true;
+            this.setStatus({
+                type: "normal",
+                value: "the connection was closed",
+            });
+        });
+
+        this.socket = socket;
+    }
+
+    //////////////
+    // Commands //
+    //////////////
+
+    cmd_status(fullexpr, arg) {
+        this.recv_echo({value: fullexpr});
+        this.append(this.statusHistory, "plain");
+    }
+
+    /////////////
+    // Senders //
+    /////////////
+
+    send_submit(data) {
+        let cmd = /^\/([^ ]+)( .*)?/.exec(data.expr);
+        let method = cmd && this.find_method("cmd", cmd[1], null);
+        if (method !== null) {
+            method(cmd[0], cmd[2]);
+        }
+        else {
+            this.send_default(data);
+        }
+    }
+
+    send_default(data) {
+        if (this.closed) {
+            this.setStatus({
+                type: "error",
+                value: "operation failed because the connection is closed",
+            });
+        }
+        else {
+            this.socket.send(JSON.stringify(data));
+        }
+    }
+
+    ///////////////////
+    // Message types //
+    ///////////////////
 
     recv_resource(data) {
         let elem = this.reify(data.value);
@@ -885,7 +936,7 @@ class Repl {
     }
 
     recv_echo(data) {
-        let ed = this.read_only_editor(data.value.trimEnd(), data.language || "python");
+        let ed = this.readOnlyEditor(data.value.trimEnd(), data.language || "python");
         let elem = document.createElement("div");
         elem.appendChild(ed);
         this.append(elem, "echo");
@@ -950,34 +1001,6 @@ class Repl {
 
     recv_bad(data) {
         console.error("Received an unknown command:", data.command);
-    }
-
-    connect() {
-        let port = window.location.port;
-        let socket = new WebSocket(`ws://localhost:${port}/sktk?session=main`);
-
-        socket.addEventListener('message', event => {
-            let data = JSON.parse(event.data);
-            this.find_method("recv", data.command, this.recv_bad)(data)
-        });
-
-        socket.addEventListener('error', event => {
-            this.closed = true;
-            this.setStatus({
-                type: "error",
-                value: "a connection error occurred",
-            });
-        });
-
-        socket.addEventListener('close', event => {
-            this.closed = true;
-            this.setStatus({
-                type: "normal",
-                value: "the connection was closed",
-            });
-        });
-
-        this.socket = socket;
     }
 }
 
