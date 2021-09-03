@@ -40,7 +40,9 @@ function isElementInViewport(el) {
 }
 
 require.config({ paths: { 'vs': '/lib/vs' }});
-define(["vs/editor/editor.main"], (monaco) => {
+define(["vs/editor/editor.main", "lib/mousetrap.min"], (monaco, Mousetrap) => {
+
+Mousetrap.prototype.stopCallback = () => false;
 
 const KM = monaco.KeyMod;
 const KC = monaco.KeyCode;
@@ -288,7 +290,7 @@ class Repl {
         this.expectedContent = null;
 
         target.onclick = this.$globalClickEvent.bind(this);
-        window.onkeydown = this.$globalKDEvent.bind(this);
+        this.addKeyboardHandlers();
         window.$$SKTK = this.sktk.bind(this);
         window.snektalk = this;
         this.$currid = 0;
@@ -324,30 +326,19 @@ class Repl {
         }
     }
 
-    $globalKDEvent(evt) {
-        let cmdctrl = isMac ? (evt.metaKey && !evt.ctrlKey) : evt.ctrlKey;
+    bindKey(key, fn) {
+        Mousetrap.bind(key, fn);
+    }
 
-        // Cmd+P => focus repl
-        if (cmdctrl && !evt.altKey && evt.key === "p") {
-
-            evt.preventDefault();
-            evt.stopPropagation();
-
-            this.editor.focus();
-        }
-        // Cmd+B => navigate to next visible editor
-        else if (cmdctrl && !evt.altKey && evt.key === "b") {
-
-            evt.preventDefault();
-            evt.stopPropagation();
-    
+    addKeyboardHandlers() {
+        const cycleEditor = direction => {
             // Find alive and visible editors
             let editors = Array
             .from(this.container.querySelectorAll(".snek-editor-cyclable"))
             .filter(container => isElementInViewport(container))
             .map(container => container.$editor);
 
-            if (!evt.shiftKey) {
+            if (direction < 0) {
                 editors.reverse();
             }
 
@@ -365,6 +356,21 @@ class Repl {
                 editors[0].focus();
             }
         }
+
+        this.bindKey("mod+p", () => {
+            this.editor.focus();
+            return false;
+        });
+
+        this.bindKey("mod+b", () => {
+            cycleEditor(-1);
+            return false;
+        });
+
+        this.bindKey("mod+shift+b", () => {
+            cycleEditor(1);
+            return false;
+        });
     }
 
     $globalClickEvent(evt) {
