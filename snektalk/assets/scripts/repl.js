@@ -51,7 +51,37 @@ let mainRepl = null;
 let evalIdGen = 0;
 
 
+class PriorityList {
+
+    constructor() {
+        this.handlers = [];
+    }
+
+    add(priority, data) {
+        this.handlers.push([priority, data]);
+        this.handlers.sort((a, b) => b[0] - a[0])
+    }
+
+    push(data) {
+        this.add(this.handlers.length + 1, data);
+    }
+
+    run(...args) {
+        for (const data of this) {
+            data(...args);
+        }
+    }
+
+    *[Symbol.iterator]() {
+        for (const [priority, data] of this.handlers) {
+            yield data;
+        }
+    }
+}
+
+
 class PopupNav {
+
     constructor(options) {
         this.name = options.name;
         this.default = options.default;
@@ -179,12 +209,17 @@ class PinPane {
 
     setup(repl) {
         this.repl = repl;
-        this.repl.addClickHandler(
+        this.repl.events.click.add(
             200,
-            {"cmdCtrl": true, "altKey": true, "shiftKey": false},
-            "pinnable",
-            this.clickHandler.bind(this),
+            {
+                modifiers: {"cmdCtrl": true, "altKey": true, "shiftKey": false},
+                attr: "pinnable",
+                handler: this.clickHandler.bind(this),
+            }
         )
+        this.repl.events.printbox.push(prbox => {
+            prbox.setAttribute("pinnable", "");
+        })
     }
 
     clickHandler(evt, target) {
@@ -234,7 +269,10 @@ class PinPane {
 class Repl {
 
     constructor(target) {
-        this.clickHandlers = [];
+        this.events = {
+            click: new PriorityList(),
+            printbox: new PriorityList(),
+        };
         this.container = target;
         this.options = {};
         this.lib = {};
@@ -296,38 +334,50 @@ class Repl {
         this.$currid = 0;
         this.$responseMap = {};
 
-        this.addClickHandler(0, {}, null, this.clickHandlerDflt.bind(this));
-        this.addClickHandler(100, {"cmdCtrl": true, "altKey": false, "shiftKey": false}, "objid", this.clickHandlerObj.bind(this));
+        this.addClickHandlers();
 
         exports.mainRepl = this;
     }
 
-    addClickHandler(priority, keys, attr, handler) {
-        this.clickHandlers.push([priority, keys, attr, handler]);
-        this.clickHandlers.sort((a, b) => b[0] - a[0])
-    }
+    addClickHandlers() {
+        // Default behavior
+        this.events.click.add(
+            0,
+            {
+                modifiers: {},
+                attr: null,
+                handler(evt, target) {
+                    if (target.onclick !== null
+                        || target.onmousedown !== null
+                        || target.ondblclick !== null
+                        || target.tagName === "A") {
+                        // Stop if non-default behavior or link
 
-    clickHandlerObj(evt, target) {
-        this.sktk(parseInt(target.getAttribute("objid")));
-        return true;
-    }
+                        return true
+                    }
+                    else {
+                        return false
+                    }
+                }
+            }
+        );
 
-    clickHandlerDflt(evt, target) {
-        if (target.onclick !== null
-            || target.onmousedown !== null
-            || target.ondblclick !== null
-            || target.tagName === "A") {
-            // Stop if non-default behavior or link
-
-            return true
-        }
-        else {
-            return false
-        }
+        // Click on object
+        this.events.click.add(
+            100,
+            {
+                modifiers: {"cmdCtrl": true, "altKey": false, "shiftKey": false},
+                attr: "objid",
+                handler(evt, target) {
+                    this.sktk(parseInt(target.getAttribute("objid")));
+                    return true;
+                }
+            }
+        );
     }
 
     bindKey(key, fn) {
-        Mousetrap.bind(key, fn);
+        return Mousetrap.bind(key, fn);
     }
 
     addKeyboardHandlers() {
@@ -381,17 +431,21 @@ class Repl {
             return;
         }
         let target = evt.target;
-        outer_loop: while (target) {
-            handler_loop: for (let [_, keys, attr, handler] of this.clickHandlers) {
-                for (let key in keys) {
-                    if (evt[key] != keys[key]) {
+
+        outer_loop:
+        while (target) {
+
+            handler_loop:
+            for (let {modifiers, attr, handler} of this.events.click) {
+                for (let key in modifiers) {
+                    if (evt[key] != modifiers[key]) {
                         continue handler_loop;
                     }
                 }
                 if (attr && target.getAttribute(attr) === null) {
                     continue handler_loop;
                 }
-                if (handler(evt, target)) {
+                if (handler.call(this, evt, target)) {
                     break outer_loop;
                 }
             }
@@ -794,7 +848,7 @@ class Repl {
         if (prbox === null) {
             prbox = document.createElement("div");
             prbox.id = "pr-eval-" + evalid;
-            prbox.setAttribute("pinnable", "");
+            this.events.printbox.run(prbox);
             this.pane.appendChild(prbox);
         }
         if (data.type === "statement") { }
