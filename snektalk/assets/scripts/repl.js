@@ -285,12 +285,7 @@ class Repl {
         };
         this.togglePopup(null);
 
-        this.historySelection = 0;
-        this.filter = null;
-        this.filteredHistory = [""];
-        this.history = [""];
         this.expectedContent = null;
-        this.historyPopup = null;
 
         target.onclick = this.$globalClickEvent.bind(this);
         window.onkeydown = this.$globalKDEvent.bind(this);
@@ -546,14 +541,6 @@ class Repl {
                 command: "submit",
                 expr: val,
             });
-            if (this.history[1] !== val && val !== "") {
-                this.history[0] = val;
-                this.history.unshift("");
-            }
-            else {
-                this.history[0] = "";
-            }
-            this.filter = null;
             this.togglePopup(null);
             // The flex-direction on the outer pane is reversed, so
             // 0 scrolls it to the bottom. Handy.
@@ -883,10 +870,6 @@ class Repl {
         this.inputMode.innerHTML = data.html;
     }
 
-    recv_add_history(data) {
-        this.history.push.apply(this.history, data["history"].reverse());
-    }
-
     recv_set_lib(data) {
         for (let key in data.lib) {
             this.lib[key] = this.get_external(data.lib[key]);
@@ -936,13 +919,7 @@ class Repl {
 
         this.socket = socket;
     }
-
-    getEditor() {
-        return editor;
-    }
-
 }
-
 
 let exports = {
     mainRepl,
