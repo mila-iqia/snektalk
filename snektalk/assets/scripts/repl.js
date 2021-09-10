@@ -200,10 +200,55 @@ class PopupNav {
 }
 
 
+class PopupSet {
+
+    constructor(popups) {
+        this.active = null;
+        this.popups = Object.assign({}, popups || {});
+        this.lib = null;
+    }
+
+    setup(repl) {
+        this.repl = repl;
+        this.lib = this.repl.lib;
+    }
+
+    context() {
+        return this.repl.editor.getValue();
+    }
+
+    async toggle(name) {
+        this.active = null;
+        for (const popupName in this.popups) {
+            const pop = this.popups[popupName];
+            if (name == popupName && !pop.visible) {
+                const entries = await this.lib.populate_popup(
+                    name,
+                    this.context(),
+                );
+                if (entries !== null) {
+                    pop.setEntries(entries);
+                }
+                pop.show();
+                if (!pop.entries.length) {
+                    pop.setCursor(0);
+                }
+                this.active = pop;
+            }
+            else {
+                pop.hide();
+            }
+        }
+        this.repl.popupActive.set(this.active !== null);
+    }
+
+}
+
+
 class PinPane {
 
     constructor(element) {
-        this.repl = null
+        this.repl = null;
         this.element = element;
     }
 
@@ -284,7 +329,7 @@ class Repl {
         this.inputBox = target.querySelector(".snek-input");
         this.inputMode = target.querySelector(".snek-input-mode");
         this.inputMode.onclick = () => setTimeout(() => {
-            this.togglePopup("interactors");
+            this.popups.toggle("interactors");
             this.editor.focus();
         }, 0);
         this.statusBar = target.querySelector(".snek-status-bar");
@@ -292,9 +337,8 @@ class Repl {
         this.nav = target.querySelector(".snek-nav");
         this.statusHistory = document.createElement("div");
         this.statusHistory.className = "snek-status-history";
-        this.$$setupEditor(this.inputBox);
 
-        this.popups = {
+        this.popups = new PopupSet({
             history: new PopupNav({
                 name: "history",
                 anchor: this.inputOuter,
@@ -302,7 +346,7 @@ class Repl {
                     this.editor.setValue(entries.map(x => x.text).join("\n"));
                     const nlines = this.editor.getModel().getLineCount();
                     this.editor.setPosition({lineNumber: nlines, column: 1000000});
-                    this.togglePopup(null);
+                    this.popups.toggle(null);
                     this.editor.focus();
                 },
                 class: "snek-popup-nav-history",
@@ -316,14 +360,17 @@ class Repl {
                         command: "submit",
                         expr: `/attach ${entries[0].text}`,
                     });
-                    this.togglePopup(null);
+                    this.popups.toggle(null);
                     this.editor.focus();
                 },
                 class: "snek-popup-nav-interactors",
                 default: "No interactors",
             })
-        };
-        this.togglePopup(null);
+        });
+        this.$$setupEditor(this.inputBox);
+
+        this.popups.setup(this);
+        this.popups.toggle(null);
 
         this.expectedContent = null;
 
@@ -458,7 +505,7 @@ class Repl {
             }
             target = target.parentElement;
         }
-        this.togglePopup(null);
+        this.popups.toggle(null);
     }
 
     $$event_updateHeight() {
@@ -526,7 +573,7 @@ class Repl {
                 total > 1
                 || editor.getModel().getLineContent(1).match(/[\(\[\{:]$|^@/)
             )
-            let pop = this.activePopup;
+            let pop = this.popups.active;
             if (pop !== null) {
                 pop.setEntries(
                     await this.lib.populate_popup(pop.name, this.editor.getValue())
@@ -541,7 +588,7 @@ class Repl {
                 command: "submit",
                 expr: val,
             });
-            this.togglePopup(null);
+            this.popups.toggle(null);
             // The flex-direction on the outer pane is reversed, so
             // 0 scrolls it to the bottom. Handy.
             this.outerPane.scrollTop = 0;
@@ -565,7 +612,7 @@ class Repl {
 
         editor.addCommand(
             KM.WinCtrl | KC.KEY_R,
-            () => this.togglePopup("history")
+            () => this.popups.toggle("history")
         );
 
         editor.addCommand(
@@ -584,37 +631,37 @@ class Repl {
 
         editor.addCommand(
             KC.Enter,
-            () => this.activePopup.submit(),
+            () => this.popups.active.submit(),
             "popupActive"
         );
 
         editor.addCommand(
             KC.Escape,
-            () => this.togglePopup(null),
+            () => this.popups.toggle(null),
             "popupActive"
         );
 
         editor.addCommand(
             KC.UpArrow,
-            () => { this.activePopup.goUp(); },
+            () => { this.popups.active.goUp(); },
             "popupActive"
         );
 
         editor.addCommand(
             KC.DownArrow,
-            () => { this.activePopup.goDown(); },
+            () => { this.popups.active.goDown(); },
             "popupActive"
         );
 
         editor.addCommand(
             KM.Shift | KC.UpArrow,
-            () => { this.activePopup.goUp(true); },
+            () => { this.popups.active.goUp(true); },
             "popupActive"
         );
 
         editor.addCommand(
             KM.Shift | KC.DownArrow,
-            () => { this.activePopup.goDown(true); },
+            () => { this.popups.active.goDown(true); },
             "popupActive"
         );
 
@@ -712,31 +759,6 @@ class Repl {
             evt.stopPropagation();
             execNow();
         }
-    }
-
-    async togglePopup(name) {
-        this.activePopup = null;
-        for (const popupName in this.popups) {
-            const pop = this.popups[popupName];
-            if (name == popupName && !pop.visible) {
-                const entries = await this.lib.populate_popup(
-                    name,
-                    this.editor.getValue(),
-                );
-                if (entries !== null) {
-                    pop.setEntries(entries);
-                }
-                pop.show();
-                if (!pop.entries.length) {
-                    pop.setCursor(0);
-                }
-                this.activePopup = pop;
-            }
-            else {
-                pop.hide();
-            }
-        }
-        this.popupActive.set(this.activePopup !== null);
     }
 
     async navigateHistory(delta) {
